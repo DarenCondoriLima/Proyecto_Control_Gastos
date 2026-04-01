@@ -1,0 +1,203 @@
+-- =============================================
+-- DATABASE: ControlPeso (Versión Supabase / Postgres)
+-- Tipos de ID: UUID con generación automática
+-- =============================================
+
+-- Extensiones necesarias para UUID (Supabase las tiene activas por defecto, pero es buena práctica)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- DROP TABLES (Orden de dependencias)
+DROP TABLE IF EXISTS Debts;
+DROP TABLE IF EXISTS FixedExpenses;
+DROP TABLE IF EXISTS BudgetItems;
+DROP TABLE IF EXISTS Budgets;
+DROP TABLE IF EXISTS Expenses;
+DROP TABLE IF EXISTS SubCategories;
+DROP TABLE IF EXISTS Categories;
+DROP TABLE IF EXISTS Cards;
+DROP TABLE IF EXISTS Users;
+
+-- =============================================
+-- 1. USERS: Perfiles y credenciales.
+-- =============================================
+CREATE TABLE Users(
+    ID_USER         UUID          NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    NAME_USER       VARCHAR(50)  NOT NULL UNIQUE,
+    FIRSTNAME_USER  VARCHAR(50)  NOT NULL,
+    LASTNAME_USER   VARCHAR(75)  NOT NULL,
+    ROLE_USER       VARCHAR(25)  NOT NULL DEFAULT 'User',
+    EMAIL_USER      VARCHAR(255) NOT NULL UNIQUE,
+    PASSWORD_USER   VARCHAR(255) NOT NULL,
+    DATEBIRTH_USER  DATE          NOT NULL,
+    IMAGE_USER      VARCHAR(255) NULL,
+    DELETED_USER    BOOLEAN       NOT NULL DEFAULT FALSE,
+    CREATED_AT      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 2. CARDS: Fuentes de fondos (Crédito/Débito).
+-- =============================================
+CREATE TABLE Cards(
+    ID_CARD      UUID          NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    ID_USER      UUID          NOT NULL REFERENCES Users(ID_USER),
+    NAME_CARD    VARCHAR(50)  NOT NULL,
+    TYPE_CARD    VARCHAR(10)  NOT NULL CHECK (TYPE_CARD IN ('Debit', 'Credit')),
+    CURRENCY     VARCHAR(3)   NOT NULL DEFAULT 'PEN', 
+    LIMIT_CARD   DECIMAL(15,2) NULL,
+    CUTOFF_DAY   SMALLINT      NULL CHECK (CUTOFF_DAY BETWEEN 1 AND 31),
+    DUE_DAY      SMALLINT      NULL CHECK (DUE_DAY BETWEEN 1 AND 31),
+    DELETED_CARD BOOLEAN       NOT NULL DEFAULT FALSE,
+    CREATED_AT   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 3. CATEGORIES: Grupos principales de gastos.
+-- =============================================
+CREATE TABLE Categories(
+    ID_CAT      UUID         NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    ID_USER     UUID         NOT NULL REFERENCES Users(ID_USER),
+    NAME_CAT    VARCHAR(50) NOT NULL,
+    GLOBAL_CAT  BOOLEAN      NOT NULL DEFAULT FALSE,
+    DELETED_CAT BOOLEAN      NOT NULL DEFAULT FALSE,
+    CREATED_AT  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 4. SUBCATEGORIES: Detalle de las categorías.
+-- =============================================
+CREATE TABLE SubCategories(
+    ID_SUBCAT      UUID         NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    ID_CATEGORY    UUID         NOT NULL REFERENCES Categories(ID_CAT),
+    ID_USER        UUID         NOT NULL REFERENCES Users(ID_USER),
+    NAME_SUBCAT    VARCHAR(50) NOT NULL,
+    GLOBAL_SUBCAT  BOOLEAN      NOT NULL DEFAULT FALSE,
+    DELETED_SUBCAT BOOLEAN      NOT NULL DEFAULT FALSE,
+    CREATED_AT     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 5. EXPENSES: Registro de transacciones.
+-- =============================================
+CREATE TABLE Expenses(
+    ID_EXP          UUID          NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    ID_CATEGORY     UUID          NOT NULL REFERENCES Categories(ID_CAT),
+    ID_SUBCAT       UUID          NOT NULL REFERENCES SubCategories(ID_SUBCAT),
+    ID_USER         UUID          NOT NULL REFERENCES Users(ID_USER),
+    ID_CARD         UUID          NULL     REFERENCES Cards(ID_CARD),
+    DATE_EXP        DATE          NOT NULL,
+    DESCRIPTION_EXP VARCHAR(500) NOT NULL,
+    AMOUNT_EXP      DECIMAL(15,2) NOT NULL,
+    CURRENCY_EXP    VARCHAR(3)   NOT NULL DEFAULT 'PEN',
+    PAYMENT_METHOD  VARCHAR(10)  NOT NULL DEFAULT 'Cash'
+                    CHECK (PAYMENT_METHOD IN ('Cash', 'Debit', 'Credit')),
+    INSTALLMENTS    SMALLINT      NOT NULL DEFAULT 1,
+    INSTALLMENT_AMT DECIMAL(15,2) NULL, 
+    DELETED_EXP     BOOLEAN       NOT NULL DEFAULT FALSE,
+    CREATED_AT      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT CHK_CreditNeedsCard CHECK (
+        (PAYMENT_METHOD = 'Credit' AND ID_CARD IS NOT NULL) OR (PAYMENT_METHOD <> 'Credit')
+    ),
+    CONSTRAINT CHK_InstallmentsAmount CHECK (
+        (INSTALLMENTS > 1 AND INSTALLMENT_AMT IS NOT NULL) OR (INSTALLMENTS = 1)
+    )
+);
+
+-- =============================================
+-- 6. BUDGETS: Límites mensuales globales.
+-- =============================================
+CREATE TABLE Budgets(
+    ID_BUDGET       UUID         NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    ID_USER         UUID         NOT NULL REFERENCES Users(ID_USER),
+    NAME_BUDGET     VARCHAR(75) NOT NULL,
+    MONTH_BUDGET    SMALLINT     NOT NULL CHECK (MONTH_BUDGET BETWEEN 1 AND 12),
+    YEAR_BUDGET     SMALLINT     NOT NULL,
+    TOTAL_BUDGET    DECIMAL(15,2) NOT NULL,
+    CURRENCY_BUDGET VARCHAR(3)   NOT NULL DEFAULT 'PEN',
+    DELETED_BUDGET  BOOLEAN      NOT NULL DEFAULT FALSE,
+    CREATED_AT      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 7. BUDGET ITEMS: Límites por categoría.
+-- =============================================
+CREATE TABLE BudgetItems(
+    ID_ITEM      UUID         NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    ID_BUDGET    UUID         NOT NULL REFERENCES Budgets(ID_BUDGET),
+    ID_CATEGORY  UUID         NOT NULL REFERENCES Categories(ID_CAT),
+    LIMIT_ITEM   DECIMAL(15,2) NOT NULL,
+    DELETED_ITEM BOOLEAN      NOT NULL DEFAULT FALSE,
+    CREATED_AT   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 8. FIXED EXPENSES: Gastos recurrentes.
+-- =============================================
+CREATE TABLE FixedExpenses(
+    ID_FIXED        UUID          NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    ID_USER         UUID          NOT NULL REFERENCES Users(ID_USER),
+    ID_CATEGORY     UUID          NOT NULL REFERENCES Categories(ID_CAT),
+    ID_SUBCAT       UUID          NULL     REFERENCES SubCategories(ID_SUBCAT),
+    ID_CARD         UUID          NULL     REFERENCES Cards(ID_CARD),
+    NAME_FIXED      VARCHAR(100) NOT NULL,
+    AMOUNT_FIXED    DECIMAL(15,2) NOT NULL,
+    CURRENCY_FIXED  VARCHAR(3)   NOT NULL DEFAULT 'PEN',
+    DAY_FIXED       SMALLINT      NOT NULL CHECK (DAY_FIXED BETWEEN 1 AND 31),
+    FREQUENCY_FIXED VARCHAR(15)  NOT NULL DEFAULT 'Monthly'
+                    CHECK (FREQUENCY_FIXED IN ('Weekly', 'Monthly', 'Yearly')),
+    ACTIVE_FIXED    BOOLEAN       NOT NULL DEFAULT TRUE,
+    DELETED_FIXED   BOOLEAN       NOT NULL DEFAULT FALSE,
+    CREATED_AT      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 9. DEBTS: Cuentas por cobrar (Préstamos).
+-- =============================================
+CREATE TABLE Debts(
+    ID_DEBT          UUID          NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    ID_USER          UUID          NOT NULL REFERENCES Users(ID_USER),
+    DEBTOR_NAME      VARCHAR(100) NOT NULL,
+    DESCRIPTION_DEBT VARCHAR(500) NOT NULL,
+    AMOUNT_DEBT      DECIMAL(15,2) NOT NULL,
+    AMOUNT_PAID      DECIMAL(15,2) NOT NULL DEFAULT 0,
+    CURRENCY_DEBT    VARCHAR(3)   NOT NULL DEFAULT 'PEN',
+    DATE_DEBT        DATE          NOT NULL,
+    DUE_DATE_DEBT    DATE          NULL,
+    STATUS_DEBT      VARCHAR(10)  NOT NULL DEFAULT 'Pending'
+                     CHECK (STATUS_DEBT IN ('Pending', 'Partial', 'Paid')),
+    DELETED_DEBT     BOOLEAN       NOT NULL DEFAULT FALSE,
+    CREATED_AT       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT       TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 10. INCOMES: Registro de entradas de dinero.
+-- =============================================
+
+CREATE TABLE public.incomes (
+    id_inc uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    id_user uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+    amount_inc NUMERIC(15,2) NOT NULL,
+    date_inc DATE DEFAULT CURRENT_DATE,
+    id_category uuid REFERENCES public.categories(id_cat) ON DELETE SET NULL,
+    payment_method TEXT CHECK (payment_method IN ('Cash', 'Debit')),
+    id_card uuid REFERENCES public.cards(id_card) ON DELETE SET NULL,
+    description_inc TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Habilitar RLS (Seguridad)
+ALTER TABLE public.incomes ENABLE ROW LEVEL SECURITY;
+
+-- Crear política para que cada usuario solo vea sus ingresos
+CREATE POLICY "Users can manage their own incomes" 
+ON public.incomes FOR ALL 
+USING (auth.uid() = id_user);

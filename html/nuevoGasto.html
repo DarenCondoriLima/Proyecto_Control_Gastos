@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Gasto — ControlGastos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0f0e0d;
+            --paper: #f5f0e8;
+            --cream: #ede8dc;
+            --cream2: #e6e0d2;
+            --gold: #c9a84c;
+            --gold-light: rgba(201,168,76,0.12);
+            --rust: #c05c3a;
+            --rust-light: rgba(192,92,58,0.1);
+            --muted: #8a8070;
+            --line: rgba(15,14,13,0.1);
+            --sidebar-w: 220px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); display: flex; min-height: 100vh; }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar { width: var(--sidebar-w); background: var(--ink); display: flex; flex-direction: column; padding: 2rem 1.25rem; position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; overflow: hidden; }
+        .sidebar::before { content: ''; position: absolute; bottom: -80px; left: -80px; width: 240px; height: 240px; background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%); pointer-events: none; }
+        .sb-brand { display: flex; align-items: center; gap: 0.65rem; padding-bottom: 2rem; border-bottom: 1px solid rgba(245,240,232,0.08); margin-bottom: 2rem; }
+        .sb-brand-icon { width: 34px; height: 34px; border: 1.5px solid var(--gold); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .sb-brand-name { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 300; color: var(--paper); }
+        .sb-brand-name span { color: var(--gold); }
+        .sb-section-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.28); padding: 0 0.5rem; margin-bottom: 0.5rem; }
+        .sb-nav { list-style: none; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 2px; }
+        .sb-nav a { display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.83rem; color: rgba(245,240,232,0.55); text-decoration: none; transition: all 0.2s; }
+        .sb-nav a:hover { color: var(--paper); background: rgba(245,240,232,0.06); }
+        .sb-nav a.active { color: var(--gold); background: rgba(201,168,76,0.1); font-weight: 500; }
+        .sb-nav a svg { width: 15px; height: 15px; opacity: 0.7; }
+        .sb-spacer { flex: 1; }
+        .sb-user { display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem; border-radius: 10px; background: rgba(245,240,232,0.05); border: 1px solid rgba(245,240,232,0.08); }
+        .sb-avatar { width: 32px; height: 32px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-size: 0.85rem; color: var(--ink); font-weight: 600; }
+        .sb-user-name { font-size: 0.8rem; font-weight: 500; color: var(--paper); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sb-logout { background: none; border: none; cursor: pointer; color: rgba(245,240,232,0.3); transition: color 0.2s; }
+        .sb-logout:hover { color: var(--rust); }
+
+        /* ─── MAIN ─── */
+        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; justify-content: center; align-items: center; padding: 2rem; }
+
+        .expense-card { background: white; width: 100%; max-width: 500px; border-radius: 20px; border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; animation: fadeUp 0.5s ease both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card-head { padding: 2rem; border-bottom: 1px solid var(--line); text-align: center; }
+        .card-head h2 { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 300; }
+        .card-head h2 span { color: var(--rust); }
+        .card-head p { font-size: 0.85rem; color: var(--muted); margin-top: 0.4rem; }
+
+        .card-body { padding: 2rem; }
+
+        .field { margin-bottom: 1.5rem; }
+        .field label { display: block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; }
+        
+        .input-group { position: relative; display: flex; align-items: center; }
+        .input-group span { position: absolute; left: 1rem; font-family: 'Fraunces', serif; color: var(--muted); }
+        .input-group input { padding-left: 2.2rem !important; font-size: 1.5rem !important; font-family: 'Fraunces', serif !important; color: var(--rust) !important; width: 100%; padding: 0.8rem; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); outline: none; transition: border-color 0.2s; }
+        
+        .field input, .field select, .field textarea { width: 100%; padding: 0.8rem 1rem; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: all 0.2s; }
+        .field input:focus, .field select:focus { border-color: var(--gold); background: white; }
+
+        .btn-save { width: 100%; padding: 1rem; background: var(--ink); color: var(--paper); border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; margin-top: 1rem; }
+        .btn-save:hover { opacity: 0.9; }
+
+        .field-hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.4rem; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sb-brand">
+        <div class="sb-brand-icon">
+            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 10C3 6.13 6.13 3 10 3s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#c9a84c" stroke-width="1.5"/>
+                <path d="M10 7v6M7.5 9.5l2.5-2.5 2.5 2.5" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <span class="sb-brand-name">Control<span>Gastos</span></span>
+    </div>
+
+    <p class="sb-section-label">Principal</p>
+    <ul class="sb-nav">
+        <li><a href="dashboard.html"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/></svg> Inicio</a></li>
+    </ul>
+
+    <p class="sb-section-label">Movimientos</p>
+    <ul class="sb-nav">
+        <li><a href="nuevoGasto.html" class="active"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg> Nuevo Gasto</a></li>
+        <li><a href="nuevoIngreso.html"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10h12M10 14l4-4-4-4" stroke-linecap="round" stroke-linejoin="round"/></svg> Nuevo Ingreso</a></li>
+    </ul>
+
+    <p class="sb-section-label">Gestión</p>
+    <ul class="sb-nav">
+        <li><a href="categoriasYSubCategorias.html"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h14M3 10h10M3 15h6" stroke-linecap="round"/></svg> Categorías</a></li>
+        <li><a href="metodosPago.html"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16" stroke-linecap="round"/></svg> Métodos de Pago</a></li>
+        <li><a href="deudores.html"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.31 2.69-6 6-6"/><path d="M14 12v5M11.5 14.5l2.5-2.5 2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Deudores</a></li>
+    </ul>
+
+    <div class="sb-spacer"></div>
+
+    <div class="sb-user">
+        <div class="sb-avatar" id="sb-initial">U</div>
+        <div class="sb-user-info">
+            <div class="sb-user-name" id="user-name">Usuario</div>
+            <div class="sb-user-role">Plan gratuito</div>
+        </div>
+        <button class="sb-logout" id="btn-logout" title="Cerrar sesión">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 7l3 3-3 3M16 10H8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 3H5a1 1 0 00-1 1v12a1 1 0 001 1h5" stroke-linecap="round"/></svg>
+        </button>
+    </div>
+</aside>
+
+<div class="main">
+    <div class="expense-card">
+        <div class="card-head">
+            <h2>Nuevo <span>Gasto</span></h2>
+            <p>Registra tus egresos con precisión</p>
+        </div>
+        <div class="card-body">
+            <form id="expense-form">
+                <div class="field">
+                    <label>Monto del gasto</label>
+                    <div class="input-group">
+                        <span>S/</span>
+                        <input type="text" id="exp-amount" placeholder="0.00" inputmode="decimal" required autofocus>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="field">
+                        <label>Fecha</label>
+                        <input type="date" id="exp-date" required>
+                    </div>
+                    <div class="field">
+                        <label>Método de Pago</label>
+                        <select id="exp-method" required>
+                            <option value="Cash">Efectivo</option>
+                            <option value="Debit">Débito</option>
+                            <option value="Credit">Crédito</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="card-field" class="field" style="display: none;">
+                    <label>Seleccionar Tarjeta</label>
+                    <select id="exp-card">
+                        <option value="">Selecciona tarjeta...</option>
+                    </select>
+                    <span id="card-error" style="display:none; color: var(--rust); font-size: 0.7rem; margin-top: 0.3rem;">
+                        * Debes elegir una tarjeta para pagos electrónicos.
+                    </span>
+                </div>
+
+                <div id="installments-field" class="field" style="display: none; background: var(--gold-light); padding: 1.5rem; border-radius: 15px;">
+                    <label>Número de Cuotas</label>
+                    <input type="number" id="exp-installments" value="1" min="1" max="72" step="1">
+
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 1rem;">
+                        <input type="checkbox" id="is-interest-free" checked style="width: auto;">
+                        <label style="margin-bottom: 0; text-transform: none; font-size: 0.8rem;">¿Es sin intereses?</label>
+                    </div>
+
+                    <div id="manual-installment-field" class="field" style="display: none; margin-top: 1rem;">
+                        <label>Monto de cada cuota (S/)</label>
+                        <input type="text" id="exp-inst-amount" placeholder="0.00" inputmode="decimal">
+                        <p class="field-hint">Ingresa el monto exacto que figura en tu banco.</p>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Categoría</label>
+                    <select id="exp-cat" required>
+                        <option value="">Selecciona categoría</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Subcategoría</label>
+                    <select id="exp-subcat" required disabled>
+                        <option value="">Elige categoría primero</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Descripción</label>
+                    <textarea id="exp-desc" rows="2" placeholder="Opcional..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-save">Guardar Movimiento</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="../js/main.js"></script>
+<script type="module" src="../js/movimientos.js"></script>
+</body>
+</html>

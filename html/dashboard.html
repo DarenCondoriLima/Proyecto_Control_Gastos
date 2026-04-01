@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ControlGastos — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ink: #0f0e0d;
+            --paper: #f5f0e8;
+            --cream: #ede8dc;
+            --cream2: #e6e0d2;
+            --gold: #c9a84c;
+            --gold-light: rgba(201,168,76,0.12);
+            --sage: #7a8c70;
+            --sage-light: rgba(122,140,112,0.12);
+            --rust: #c05c3a;
+            --rust-light: rgba(192,92,58,0.1);
+            --muted: #8a8070;
+            --line: rgba(15,14,13,0.1);
+            --sidebar-w: 220px;
+            --shadow: 0 2px 16px rgba(15,14,13,0.07);
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-height: 100vh;
+            background: var(--ink);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.25rem;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+        }
+
+        .sb-brand {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(245,240,232,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .sb-brand-icon {
+            width: 34px; height: 34px;
+            border: 1.5px solid var(--gold);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .sb-brand-name { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 300; color: var(--paper); }
+        .sb-brand-name span { color: var(--gold); }
+
+        .sb-nav { list-style: none; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 2px; }
+        .sb-nav a {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.6rem 0.75rem; border-radius: 8px;
+            font-size: 0.83rem; color: rgba(245,240,232,0.55);
+            text-decoration: none; transition: all 0.2s;
+        }
+        .sb-nav a:hover { color: var(--paper); background: rgba(245,240,232,0.06); }
+        .sb-nav a.active { color: var(--gold); background: rgba(201,168,76,0.1); font-weight: 500; }
+
+        .sb-spacer { flex: 1; }
+
+        .sb-user {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.75rem; border-radius: 10px;
+            background: rgba(245,240,232,0.05);
+            border: 1px solid rgba(245,240,232,0.08);
+        }
+
+        .sb-avatar {
+            width: 32px; height: 32px; background: var(--gold);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 600;
+        }
+
+        /* ─── MAIN CONTENT ─── */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            padding: 1.25rem 2rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--line);
+            background: rgba(245,240,232,0.7);
+            backdrop-filter: blur(8px);
+            position: sticky; top: 0; z-index: 50;
+        }
+
+        .topbar-title { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 300; }
+        .topbar-title span { color: var(--gold); }
+
+        .content { padding: 2rem; flex: 1; }
+
+        /* KPI CARDS */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: white; border-radius: 14px; padding: 1.5rem;
+            border: 1px solid var(--line); box-shadow: var(--shadow);
+        }
+
+        .kpi-label { font-size: 0.7rem; font-weight: 500; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+        .kpi-value { font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 300; }
+
+        /* FILTROS */
+        .filter-bar {
+            background: white; border: 1px solid var(--line); border-radius: 14px;
+            padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--shadow);
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.25rem;
+            align-items: flex-end;
+        }
+
+        .filter-field { display: flex; flex-direction: column; gap: 0.4rem; }
+        .filter-field label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; color: var(--muted); }
+        
+        .date-group { display: flex; gap: 0.5rem; }
+
+        input, select {
+            width: 100%; padding: 0.5rem; border: 1.5px solid var(--line);
+            border-radius: 8px; background: var(--paper); font-family: inherit; font-size: 0.8rem;
+        }
+
+        .btn-filter {
+            padding: 0.6rem 1rem; border: none; border-radius: 8px;
+            font-weight: 500; cursor: pointer; transition: 0.2s; font-size: 0.8rem;
+        }
+        .btn-filter.primary { background: var(--ink); color: white; }
+        .btn-filter.secondary { background: var(--cream); color: var(--muted); }
+
+        /* TABLA Y GRÁFICOS */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 1.5rem;
+        }
+
+        .chart-card {
+            background: white; border-radius: 14px; padding: 1.5rem;
+            border: 1px solid var(--line); box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+        }
+
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .chart-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--muted); }
+        .chart-badge { font-size: 0.65rem; background: var(--cream); padding: 0.2rem 0.5rem; border-radius: 10px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; font-size: 0.7rem; color: var(--muted); padding: 0.8rem 0.5rem; border-bottom: 1px solid var(--line); }
+
+        .pie-legend { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+        .legend-item { display: flex; justify-content: space-between; font-size: 0.75rem; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+        @media (max-width: 1024px) {
+            .dashboard-layout { grid-template-columns: 1fr; }
+            .sidebar { transform: translateX(-100%); }
+            .main { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sb-brand">
+            <div class="sb-brand-icon">
+                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 10C3 6.13 6.13 3 10 3s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#c9a84c" stroke-width="1.5"/>
+                </svg>
+            </div>
+            <span class="sb-brand-name">Control<span>Gastos</span></span>
+        </div>
+
+        <p style="color: rgba(245,240,232,0.3); font-size: 0.6rem; text-transform: uppercase; margin-bottom: 0.5rem; padding-left: 0.5rem;">Principal</p>
+        <ul class="sb-nav">
+            <li><a href="dashboard.html" class="active">Inicio</a></li>
+            <li><a href="nuevoGasto.html">Nuevo Gasto</a></li>
+            <li><a href="nuevoIngreso.html">Nuevo Ingreso</a></li>
+        </ul>
+
+        <p style="color: rgba(245,240,232,0.3); font-size: 0.6rem; text-transform: uppercase; margin-top: 1.5rem; margin-bottom: 0.5rem; padding-left: 0.5rem;">Gestión</p>
+        <ul class="sb-nav">
+            <li><a href="categoriasYSubCategorias.html">Categorías</a></li>
+            <li><a href="metodosPago.html">Métodos de Pago</a></li>
+            <li><a href="deudores.html">Deudores</a></li>
+        </ul>
+
+        <div class="sb-spacer"></div>
+
+        <div class="sb-user">
+            <div class="sb-avatar" id="sb-initial">U</div>
+            <div class="sb-user-info" style="margin-left: 10px;">
+                <div class="sb-user-name" id="user-name" style="color: white; font-size: 0.8rem;">Usuario</div>
+                <div style="color: gray; font-size: 0.6rem;">Cibertec Arequipa</div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div>
+                <div class="topbar-title">Panel de <span>Finanzas</span></div>
+                <div id="today-date" style="font-size: 0.7rem; color: var(--muted);">Cargando fecha...</div>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn-filter primary" onclick="location.href='nuevoGasto.html'">+ Gasto</button>
+                <button class="btn-filter primary" style="background: var(--sage);" onclick="location.href='nuevoIngreso.html'">+ Ingreso</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Saldo Neto</div>
+                    <div class="kpi-value" id="net-balance-display">S/ 0.00</div>
+                </div>
+                <div class="kpi-card" style="border-left: 4px solid var(--sage);">
+                    <div class="kpi-label">Total Ingresos</div>
+                    <div class="kpi-value" id="total-inc-display" style="color: var(--sage);">S/ 0.00</div>
+                </div>
+                <div class="kpi-card" style="border-left: 4px solid var(--rust);">
+                    <div class="kpi-label">Total Gastos</div>
+                    <div class="kpi-value" id="total-exp-display" style="color: var(--rust);">S/ 0.00</div>
+                </div>
+                <div class="kpi-card" style="border-left: 4px solid var(--gold);">
+                    <div class="kpi-label">Cuota del Mes (Tarjetas)</div>
+                    <div class="kpi-value" id="card-installments-display" style="color: var(--gold);">S/ 0.00</div>
+                </div>
+            </div>
+
+            <div class="filter-bar">
+                <form id="filter-form" class="filter-grid">
+                    <div class="filter-field">
+                        <label>Rango de Fecha</label>
+                        <div class="date-group">
+                            <input type="date" id="filter-from">
+                            <input type="date" id="filter-to">
+                        </div>
+                    </div>
+                    <div class="filter-field">
+                        <label>Periodo Rápido</label>
+                        <div class="date-group">
+                            <select id="filter-month">
+                                <option value="">Mes</option>
+                                <option value="01">Enero</option><option value="02">Febrero</option>
+                                <option value="03">Marzo</option><option value="04">Abril</option>
+                                <option value="05">Mayo</option><option value="06">Junio</option>
+                                <option value="07">Julio</option><option value="08">Agosto</option>
+                                <option value="09">Septiembre</option><option value="10">Octubre</option>
+                                <option value="11">Noviembre</option><option value="12">Diciembre</option>
+                            </select>
+                            <input type="number" id="filter-year" placeholder="Año">
+                        </div>
+                    </div>
+                    <div class="filter-field">
+                        <label>Tarjeta / Cuenta</label>
+                        <select id="filter-card">
+                            <option value="">Todas las tarjetas</option>
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label>Categoría / Tipo</label>
+                        <div class="date-group">
+                            <select id="filter-cat"><option value="">Categoría</option></select>
+                            <select id="filter-type">
+                                <option value="all">Ingresos y Gastos</option>
+                                <option value="expense">Solo Gastos</option>
+                                <option value="income">Solo Ingresos</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-field">
+                        <label>Subcategoría / Método</label>
+                        <div class="date-group">
+                            <select id="filter-subcat" disabled><option value="">Subcategoría</option></select>
+                            <select id="filter-method">
+                                <option value="">Método</option>
+                                <option value="Cash">Efectivo</option>
+                                <option value="Debit">Débito</option>
+                                <option value="Credit">Crédito</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button type="button" id="btn-apply-filters" class="btn-filter primary" style="flex: 2;">Filtrar</button>
+                        <button type="reset" id="btn-reset" class="btn-filter secondary" style="flex: 1;">X</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="dashboard-layout">
+                <div class="chart-card" style="padding: 0;">
+                    <div class="chart-header" style="padding: 1.5rem 1.5rem 0.5rem;">
+                        <span class="chart-title">Historial Reciente</span>
+                        <span id="transaction-count" class="chart-badge">0 registros</span>
+                    </div>
+                    <div style="max-height: 500px; overflow-y: auto; padding: 0 1rem 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Categoría</th>
+                                    <th>Descripción</th>
+                                    <th style="text-align: right;">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="chart-card">
+                        <div class="chart-header"><span class="chart-title">Categorías</span></div>
+                        <canvas id="pieChart" height="220"></canvas>
+                        <div id="pie-legend" class="pie-legend"></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header"><span class="chart-title">Subcategorías</span></div>
+                        <canvas id="subPieChart" height="220"></canvas>
+                        <div id="subpie-legend" class="pie-legend"></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header"><span class="chart-title">Cuotas Pendientes</span></div>
+                        <div style="font-size: 0.75rem;">
+                            <table id="installments-table">
+                                <tbody id="installments-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="kpi-card" style="background: var(--gold-light); border: 1px dashed var(--gold);">
+                        <div class="kpi-label">Pendiente Cobrar</div>
+                        <div class="kpi-value" id="debt-total-display" style="font-size: 1.4rem;">S/ 0.00</div>
+                        <button onclick="location.href='deudores.html'" style="border: none; background: none; color: var(--gold); font-size: 0.6rem; cursor: pointer; text-decoration: underline;">Gestionar deudores</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('today-date').textContent = new Date().toLocaleDateString('es-PE', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+        });
+    </script>
+    <script type="module" src="../js/dashboard.js"></script>
+</body>
+</html>

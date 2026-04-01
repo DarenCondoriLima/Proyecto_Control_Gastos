@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ControlGastos — Acceso</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ink: #0f0e0d;
+            --paper: #f5f0e8;
+            --cream: #ede8dc;
+            --gold: #c9a84c;
+            --gold-light: #e8d49a;
+            --sage: #7a8c70;
+            --rust: #c05c3a;
+            --muted: #8a8070;
+            --line: rgba(15,14,13,0.12);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--paper);
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        /* LEFT PANEL */
+        .left-panel {
+            background: var(--ink);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3rem;
+            overflow: hidden;
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 80%, rgba(201,168,76,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 20%, rgba(122,140,112,0.12) 0%, transparent 50%);
+        }
+
+        .grain {
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .left-content { position: relative; z-index: 1; }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            border: 1.5px solid var(--gold);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-icon svg { width: 20px; height: 20px; }
+
+        .brand-name {
+            font-family: 'Fraunces', serif;
+            font-size: 1.25rem;
+            font-weight: 300;
+            color: var(--paper);
+            letter-spacing: 0.02em;
+        }
+
+        .brand-name span { color: var(--gold); }
+
+        .hero-section { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 4rem 0 2rem; }
+
+        .hero-eyebrow {
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .hero-eyebrow::before {
+            content: '';
+            width: 2rem;
+            height: 1px;
+            background: var(--gold);
+            display: block;
+        }
+
+        .hero-headline {
+            font-family: 'Fraunces', serif;
+            font-size: clamp(2.5rem, 4vw, 3.5rem);
+            font-weight: 300;
+            line-height: 1.1;
+            color: var(--paper);
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-headline em {
+            font-style: italic;
+            color: var(--gold);
+        }
+
+        .hero-sub {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: rgba(245,240,232,0.5);
+            max-width: 28ch;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--line);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat {
+            padding: 1.25rem;
+            background: rgba(245,240,232,0.03);
+            text-align: center;
+        }
+
+        .stat-num {
+            font-family: 'Fraunces', serif;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(245,240,232,0.35);
+            margin-top: 0.3rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* RIGHT PANEL */
+        .right-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 2.5rem;
+            position: relative;
+        }
+
+        .right-panel::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .form-card {
+            width: 100%;
+            max-width: 400px;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-header {
+            margin-bottom: 2.5rem;
+        }
+
+        .form-header h2 {
+            font-family: 'Fraunces', serif;
+            font-size: 2rem;
+            font-weight: 300;
+            color: var(--ink);
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            font-size: 0.875rem;
+            color: var(--muted);
+        }
+
+        /* TABS */
+        .tab-switcher {
+            display: flex;
+            background: var(--cream);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 2rem;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: none;
+            background: transparent;
+            border-radius: 7px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 0.01em;
+        }
+
+        .tab-btn.active {
+            background: var(--ink);
+            color: var(--paper);
+            font-weight: 500;
+        }
+
+        /* FORM PANES */
+        .tab-pane { display: none; }
+        .tab-pane.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* INPUTS */
+        .field {
+            margin-bottom: 1.25rem;
+            position: relative;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 1.5px solid var(--line);
+            border-radius: 10px;
+            background: white;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            color: var(--ink);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .field input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+        }
+
+        .field input::placeholder { color: rgba(138,128,112,0.5); }
+
+        .field-hint {
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-top: 0.35rem;
+        }
+
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        /* SUBMIT BTN */
+        .btn-submit {
+            width: 100%;
+            padding: 0.9rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            margin-top: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0);
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover::after { background: rgba(255,255,255,0.08); }
+        .btn-submit:active { transform: scale(0.99); }
+
+        .btn-primary-submit {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        .btn-secondary-submit {
+            background: var(--sage);
+            color: white;
+        }
+
+        /* DIVIDER */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.25rem 0;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--line);
+        }
+
+        .divider span {
+            font-size: 0.75rem;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* ALERT */
+        .alert {
+            padding: 0.875rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .alert.show { display: block; animation: fadeIn 0.3s ease; }
+        .alert-error { background: #fef2ef; border: 1px solid rgba(192,92,58,0.25); color: var(--rust); }
+        .alert-success { background: #f0f5ee; border: 1px solid rgba(122,140,112,0.3); color: var(--sage); }
+
+        /* FOOTER NOTE */
+        .form-footer-note {
+            text-align: center;
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-top: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .form-footer-note a { color: var(--gold); text-decoration: none; }
+
+        #alert-container {
+            min-height: 50px; /* Reserva el espacio para la alerta */
+            margin-top: 1rem;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            body { grid-template-columns: 1fr; }
+            .left-panel { display: none; }
+            .right-panel { padding: 2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- LEFT DECORATIVE PANEL -->
+<div class="left-panel">
+    <div class="grain"></div>
+
+    <div class="left-content brand">
+        <div class="brand-icon">
+            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 10C3 6.13 6.13 3 10 3s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#c9a84c" stroke-width="1.5"/>
+                <path d="M10 7v6M7.5 9.5l2.5-2.5 2.5 2.5" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <span class="brand-name">Control<span>Gastos</span></span>
+    </div>
+
+    <div class="left-content hero-section">
+        <p class="hero-eyebrow">Finanzas personales</p>
+        <h1 class="hero-headline">
+            Tu dinero,<br>
+            bajo <em>control</em><br>
+            por fin.
+        </h1>
+        <p class="hero-sub">Registra, analiza y optimiza tus gastos con claridad. Sin complejidad innecesaria.</p>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-num">12K+</div>
+            <div class="stat-label">Usuarios</div>
+        </div>
+        <div class="stat">
+            <div class="stat-num">98%</div>
+            <div class="stat-label">Satisfacción</div>
+        </div>
+        <div class="stat">
+            <div class="stat-num">S/. 0</div>
+            <div class="stat-label">Para siempre</div>
+        </div>
+    </div>
+</div>
+
+<!-- RIGHT FORM PANEL -->
+<div class="right-panel">
+    <div class="form-card">
+
+        <div class="form-header">
+            <h2>Bienvenido de nuevo</h2>
+            <p>Ingresa a tu cuenta para continuar</p>
+        </div>
+
+        <!-- TAB SWITCHER -->
+        <div class="tab-switcher">
+            <button class="tab-btn active" data-target="login-pane">Ingresar</button>
+            <button class="tab-btn" data-target="register-pane">Crear cuenta</button>
+        </div>
+
+        <!-- LOGIN PANE -->
+        <div class="tab-pane active" id="login-pane">
+            <form id="login-form">
+                <div class="field">
+                    <label>Correo electrónico</label>
+                    <input type="email" id="login-email" placeholder="tú@ejemplo.com" required>
+                </div>
+                <div class="field">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-submit btn-primary-submit">Iniciar Sesión →</button>
+            </form>
+
+            <div class="divider"><span>o</span></div>
+
+            <p class="form-footer-note">
+                ¿Olvidaste tu contraseña? <a href="#">Recupérala aquí</a>
+            </p>
+        </div>
+
+        <!-- REGISTER PANE -->
+        <div class="tab-pane" id="register-pane">
+            <form id="register-form">
+                <div class="field-row">
+                    <div class="field">
+                        <label>Nombre</label>
+                        <input type="text" id="reg-firstname" placeholder="Juan" required>
+                    </div>
+                    <div class="field">
+                        <label>Apellido</label>
+                        <input type="text" id="reg-lastname" placeholder="Pérez" required>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Fecha de nacimiento</label>
+                    <input type="date" id="reg-birth" required>
+                </div>
+                <div class="field">
+                    <label>Correo electrónico</label>
+                    <input type="email" id="reg-email" placeholder="tú@ejemplo.com" required>
+                </div>
+                <div class="field">
+                    <label>Contraseña</label>
+                    <input type="password" id="reg-password" placeholder="••••••••" required>
+                    <p class="field-hint">Mín. 8 caracteres, una mayúscula, una minúscula y un número.</p>
+                </div>
+                <button type="submit" class="btn-submit btn-secondary-submit">Crear Cuenta →</button>
+            </form>
+        </div>
+
+        <div id="alert-container"></div>
+
+        <p class="form-footer-note" style="margin-top: 2rem;">
+            Al continuar, aceptas nuestros <a href="#">Términos de Servicio</a> y <a href="#">Política de Privacidad</a>
+        </p>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module" src="../js/auth.js"></script>
+</body>
+</body>
+</html>

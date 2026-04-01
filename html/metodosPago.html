@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Métodos de Pago — ControlGastos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0f0e0d;
+            --paper: #f5f0e8;
+            --cream: #ede8dc;
+            --cream2: #e6e0d2;
+            --gold: #c9a84c;
+            --gold-light: rgba(201,168,76,0.12);
+            --rust: #c05c3a;
+            --rust-light: rgba(192,92,58,0.1);
+            --muted: #8a8070;
+            --line: rgba(15,14,13,0.1);
+            --sidebar-w: 220px;
+            --shadow: 0 4px 20px rgba(15,14,13,0.06);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); display: flex; min-height: 100vh; }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-height: 100vh;
+            background: var(--ink);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.25rem;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -80px;
+            width: 240px; height: 240px;
+            background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .sb-brand {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(245,240,232,0.08);
+            margin-bottom: 2rem;
+        }
+        .sb-brand-icon {
+            width: 34px; height: 34px;
+            border: 1.5px solid var(--gold);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .sb-brand-name { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 300; color: var(--paper); letter-spacing: 0.02em; }
+        .sb-brand-name span { color: var(--gold); }
+        .sb-section-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.28); padding: 0 0.5rem; margin-bottom: 0.5rem; }
+        .sb-nav { list-style: none; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 2px; }
+        .sb-nav a {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.83rem; font-weight: 400;
+            color: rgba(245,240,232,0.55);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .sb-nav a:hover { color: var(--paper); background: rgba(245,240,232,0.06); }
+        .sb-nav a.active { color: var(--gold); background: rgba(201,168,76,0.1); font-weight: 500; }
+        .sb-nav a svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+        .sb-nav a.active svg { opacity: 1; }
+        .sb-spacer { flex: 1; }
+        .sb-user {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.75rem;
+            border-radius: 10px;
+            background: rgba(245,240,232,0.05);
+            border: 1px solid rgba(245,240,232,0.08);
+            position: relative; z-index: 1;
+        }
+        .sb-avatar { width: 32px; height: 32px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-size: 0.85rem; color: var(--ink); font-weight: 600; flex-shrink: 0; }
+        .sb-user-info { flex: 1; min-width: 0; }
+        .sb-user-name { font-size: 0.8rem; font-weight: 500; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sb-user-role { font-size: 0.68rem; color: rgba(245,240,232,0.35); }
+        .sb-logout { background: none; border: none; cursor: pointer; color: rgba(245,240,232,0.3); padding: 2px; transition: color 0.2s; }
+        .sb-logout:hover { color: var(--rust); }
+
+        /* ─── MAIN ─── */
+        .main { margin-left: var(--sidebar-w); flex: 1; padding: 2.5rem; }
+
+        .header-flex { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; }
+        .header-flex h1 { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 300; }
+        .header-flex h1 span { color: var(--gold); }
+
+        .btn-add { 
+            padding: 0.7rem 1.2rem; background: var(--ink); color: white; 
+            border: none; border-radius: 10px; font-size: 0.85rem; cursor: pointer;
+            display: flex; align-items: center; gap: 0.5rem; transition: opacity 0.2s;
+        }
+        .btn-add:hover { opacity: 0.9; }
+
+        /* Tarjetas Estilo "Wallet" */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        
+        .bank-card {
+            background: white; border-radius: 18px; border: 1px solid var(--line);
+            padding: 1.5rem; box-shadow: var(--shadow); position: relative;
+            transition: transform 0.2s; overflow: hidden;
+        }
+        .bank-card:hover { transform: translateY(-4px); }
+        .bank-card::before { 
+            content: ''; position: absolute; top: -20px; right: -20px; 
+            width: 100px; height: 100px; background: var(--gold-light); 
+            border-radius: 50%; opacity: 0.5; 
+        }
+
+        .card-type { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.5rem; }
+        .card-name { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 400; margin-bottom: 1.5rem; }
+        
+        .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); pt: 1rem; margin-top: 1rem; padding-top: 1rem; }
+        .card-actions { display: flex; gap: 10px; }
+
+        .icon-btn { 
+            background: none; border: none; cursor: pointer; color: var(--muted); 
+            transition: color 0.2s; display: flex; align-items: center;
+        }
+        .icon-btn:hover { color: var(--ink); }
+        .icon-btn.danger:hover { color: var(--rust); }
+
+        /* MODAL */
+        .modal { 
+            position: fixed; inset: 0; background: rgba(15,14,13,0.5); 
+            backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 200;
+        }
+        .modal.open { display: flex; }
+        .modal-content { background: white; width: 100%; max-width: 400px; padding: 2rem; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .modal-content h3 { font-family: 'Fraunces', serif; font-size: 1.4rem; margin-bottom: 1.5rem; }
+
+        .field { margin-bottom: 1.2rem; }
+        .field label { display: block; font-size: 0.7rem; font-weight: 500; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+        .field input, .field select { width: 100%; padding: 0.8rem; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); outline: none; }
+        
+        .btn-save { width: 100%; padding: 0.9rem; background: var(--ink); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 500; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sb-brand">
+        <div class="sb-brand-icon">
+            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 10C3 6.13 6.13 3 10 3s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#c9a84c" stroke-width="1.5"/>
+                <path d="M10 7v6M7.5 9.5l2.5-2.5 2.5 2.5" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <span class="sb-brand-name">Control<span>Gastos</span></span>
+    </div>
+
+    <p class="sb-section-label">Principal</p>
+    <ul class="sb-nav">
+        <li><a href="dashboard.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/></svg>
+            Inicio
+        </a></li>
+    </ul>
+
+    <p class="sb-section-label">Movimientos</p>
+    <ul class="sb-nav">
+        <li><a href="nuevoGasto.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg>
+            Nuevo Gasto
+        </a></li>
+        <li><a href="nuevoIngreso.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10h12M10 14l4-4-4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Nuevo Ingreso
+        </a></li>
+    </ul>
+
+    <p class="sb-section-label">Gestión</p>
+    <ul class="sb-nav">
+        <li><a href="categoriasYSubCategorias.html" class="active">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h14M3 10h10M3 15h6" stroke-linecap="round"/></svg>
+            Categorías
+        </a></li>
+        <li><a href="metodosPago.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16" stroke-linecap="round"/></svg>
+            Métodos de Pago
+        </a></li>
+        <li><a href="deudores.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.31 2.69-6 6-6"/><path d="M14 12v5M11.5 14.5l2.5-2.5 2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Deudores
+        </a></li>
+    </ul>
+
+    <div class="sb-spacer"></div>
+
+    <div class="sb-user">
+        <div class="sb-avatar" id="sb-initial">U</div>
+        <div class="sb-user-info">
+            <div class="sb-user-name" id="user-name">Usuario</div>
+            <div class="sb-user-role">Plan gratuito</div>
+        </div>
+        <button class="sb-logout" id="btn-logout" title="Cerrar sesión">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 7l3 3-3 3M16 10H8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 3H5a1 1 0 00-1 1v12a1 1 0 001 1h5" stroke-linecap="round"/></svg>
+        </button>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="header-flex">
+        <div>
+            <h1>Mis <span>Métodos de Pago</span></h1>
+            <p style="color: var(--muted); font-size: 0.9rem;">Gestiona tus tarjetas y cuentas bancarias</p>
+        </div>
+        <button class="btn-add" id="btn-new-card">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg>
+            Agregar Tarjeta
+        </button>
+    </div>
+
+    <div class="cards-grid" id="cards-container">
+        </div>
+</main>
+
+<div class="modal" id="card-modal">
+    <div class="modal-content">
+        <h3 id="modal-title">Nueva Tarjeta</h3>
+        <form id="card-form">
+            <input type="hidden" id="edit-card-id">
+            
+            <div class="field">
+                <label>Nombre de la Tarjeta</label>
+                <input type="text" id="card-name" placeholder="ej. Ripley Visa" required>
+            </div>
+
+            <div class="field">
+                <label>Tipo de Tarjeta</label>
+                <select id="card-type">
+                    <option value="Debit">Débito / Cuenta</option>
+                    <option value="Credit">Crédito</option>
+                </select>
+            </div>
+
+            <div id="credit-fields" style="display: none; background: var(--gold-light); padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+                <div class="field">
+                    <label>Límite de Crédito (S/)</label>
+                    <input type="number" id="card-limit" placeholder="0.00" step="0.01">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="field">
+                        <label>Día de Corte</label>
+                        <input type="number" id="card-cutoff" min="1" max="31" placeholder="15">
+                    </div>
+                    <div class="field">
+                        <label>Día de Pago</label>
+                        <input type="number" id="card-due" min="1" max="31" placeholder="05">
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" class="btn-save" style="background: var(--cream2); color: var(--ink);" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="btn-save">Guardar Tarjeta</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script type="module" src="../js/main.js"></script>
+<script type="module" src="../js/metodosPago.js"></script>
+</body>
+</html>

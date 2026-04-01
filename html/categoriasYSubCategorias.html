@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Categorías — ControlGastos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Mantén tus estilos actuales tal cual están */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ink: #0f0e0d;
+            --paper: #f5f0e8;
+            --cream: #ede8dc;
+            --cream2: #e6e0d2;
+            --gold: #c9a84c;
+            --gold-light: rgba(201,168,76,0.12);
+            --sage: #7a8c70;
+            --sage-light: rgba(122,140,112,0.12);
+            --rust: #c05c3a;
+            --rust-light: rgba(192,92,58,0.1);
+            --muted: #8a8070;
+            --line: rgba(15,14,13,0.1);
+            --sidebar-w: 220px;
+            --shadow: 0 2px 16px rgba(15,14,13,0.07);
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            display: flex;
+        }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-height: 100vh;
+            background: var(--ink);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.25rem;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -80px;
+            width: 240px; height: 240px;
+            background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .sb-brand {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(245,240,232,0.08);
+            margin-bottom: 2rem;
+        }
+        .sb-brand-icon {
+            width: 34px; height: 34px;
+            border: 1.5px solid var(--gold);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .sb-brand-name { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 300; color: var(--paper); letter-spacing: 0.02em; }
+        .sb-brand-name span { color: var(--gold); }
+        .sb-section-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.28); padding: 0 0.5rem; margin-bottom: 0.5rem; }
+        .sb-nav { list-style: none; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 2px; }
+        .sb-nav a {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.83rem; font-weight: 400;
+            color: rgba(245,240,232,0.55);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .sb-nav a:hover { color: var(--paper); background: rgba(245,240,232,0.06); }
+        .sb-nav a.active { color: var(--gold); background: rgba(201,168,76,0.1); font-weight: 500; }
+        .sb-nav a svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+        .sb-nav a.active svg { opacity: 1; }
+        .sb-spacer { flex: 1; }
+        .sb-user {
+            display: flex; align-items: center; gap: 0.65rem;
+            padding: 0.75rem;
+            border-radius: 10px;
+            background: rgba(245,240,232,0.05);
+            border: 1px solid rgba(245,240,232,0.08);
+            position: relative; z-index: 1;
+        }
+        .sb-avatar { width: 32px; height: 32px; background: var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-size: 0.85rem; color: var(--ink); font-weight: 600; flex-shrink: 0; }
+        .sb-user-info { flex: 1; min-width: 0; }
+        .sb-user-name { font-size: 0.8rem; font-weight: 500; color: var(--paper); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sb-user-role { font-size: 0.68rem; color: rgba(245,240,232,0.35); }
+        .sb-logout { background: none; border: none; cursor: pointer; color: rgba(245,240,232,0.3); padding: 2px; transition: color 0.2s; }
+        .sb-logout:hover { color: var(--rust); }
+
+        /* ─── MAIN ─── */
+        .main { margin-left: var(--sidebar-w); flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+        .topbar {
+            padding: 1.25rem 2rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--line);
+            background: rgba(245,240,232,0.7);
+            backdrop-filter: blur(8px);
+            position: sticky; top: 0; z-index: 50;
+        }
+        .topbar-title { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 300; }
+        .topbar-title span { color: var(--gold); }
+        .topbar-sub { font-size: 0.78rem; color: var(--muted); margin-top: 0.1rem; }
+
+        .btn-primary-action {
+            display: flex; align-items: center; gap: 0.4rem;
+            padding: 0.55rem 1.1rem;
+            background: var(--ink); color: var(--paper);
+            border: none; border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.82rem; font-weight: 500;
+            cursor: pointer; transition: opacity 0.2s;
+        }
+        .btn-primary-action:hover { opacity: 0.85; }
+        .btn-primary-action svg { width: 14px; height: 14px; }
+
+        /* ─── CONTENT ─── */
+        .content { padding: 2rem; flex: 1; }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--muted);
+        }
+        .empty-state svg { width: 48px; height: 48px; opacity: 0.3; margin-bottom: 1rem; }
+        .empty-state p { font-size: 0.9rem; }
+
+        /* CATEGORIES GRID */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        /* CATEGORY CARD */
+        .cat-card {
+            background: white;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            animation: fadeUp 0.4s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cat-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.1rem 1.25rem;
+            border-bottom: 1px solid var(--line);
+            gap: 0.75rem;
+        }
+
+        .cat-card-left {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            min-width: 0;
+        }
+
+        .cat-color-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .cat-name {
+            font-family: 'Fraunces', serif;
+            font-size: 1rem;
+            font-weight: 300;
+            color: var(--ink);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cat-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+        .icon-btn {
+            width: 28px; height: 28px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--muted);
+            transition: background 0.15s, color 0.15s;
+        }
+        .icon-btn:hover { background: var(--cream); color: var(--ink); }
+        .icon-btn.danger:hover { background: var(--rust-light); color: var(--rust); }
+        .icon-btn svg { width: 13px; height: 13px; }
+
+        /* SUBCATEGORIES */
+        .subcat-list { padding: 0.5rem 1.25rem 0.75rem; }
+
+        .subcat-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.45rem 0;
+            border-bottom: 1px solid rgba(15,14,13,0.05);
+        }
+        .subcat-item:last-child { border-bottom: none; }
+
+        .subcat-name {
+            font-size: 0.82rem;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .subcat-name::before {
+            content: '';
+            width: 14px; height: 1px;
+            background: var(--cream2);
+            display: block;
+        }
+
+        .subcat-actions { display: flex; gap: 2px; }
+
+        /* ADD SUBCAT BTN */
+        .add-subcat-btn {
+            width: 100%;
+            padding: 0.55rem 1.25rem;
+            background: transparent;
+            border: none;
+            border-top: 1px solid var(--line);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.78rem;
+            color: var(--muted);
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.15s, color 0.15s;
+        }
+        .add-subcat-btn:hover { background: var(--cream); color: var(--ink); }
+        .add-subcat-btn svg { width: 12px; height: 12px; }
+
+        /* ─── MODAL ─── */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(15,14,13,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            width: 100%; max-width: 420px;
+            margin: 1rem;
+            box-shadow: 0 20px 60px rgba(15,14,13,0.2);
+            transform: translateY(16px);
+            transition: transform 0.25s;
+            overflow: hidden;
+        }
+        .modal-overlay.open .modal-box { transform: translateY(0); }
+
+        .modal-head {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--line);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .modal-head h3 { font-family: 'Fraunces', serif; font-size: 1.1rem; font-weight: 300; }
+
+        .modal-close {
+            width: 30px; height: 30px;
+            border: none; background: var(--cream);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--muted);
+            transition: background 0.15s;
+        }
+        .modal-close:hover { background: var(--cream2); }
+        .modal-close svg { width: 12px; height: 12px; }
+
+        .modal-body { padding: 1.5rem; }
+
+        .modal-parent-hint {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 1rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--cream);
+            border-radius: 8px;
+        }
+        .modal-parent-hint b { color: var(--ink); font-weight: 500; }
+
+        .field { margin-bottom: 1.25rem; }
+        .field label { display: block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+        .field input {
+            width: 100%; padding: 0.75rem 1rem;
+            border: 1.5px solid var(--line);
+            border-radius: 10px;
+            background: var(--paper);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem; color: var(--ink);
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,0.12); }
+
+        .modal-foot { padding: 0 1.5rem 1.5rem; }
+
+        .btn-save {
+            width: 100%; padding: 0.85rem;
+            background: var(--ink); color: var(--paper);
+            border: none; border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem; font-weight: 500;
+            cursor: pointer; transition: opacity 0.2s;
+        }
+        .btn-save:hover { opacity: 0.85; }
+        .btn-save.sage { background: var(--sage); }
+
+        /* RESPONSIVE */
+        @media (max-width: 640px) {
+            :root { --sidebar-w: 0px; }
+            .sidebar { transform: translateX(-100%); }
+            .main { margin-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sb-brand">
+        <div class="sb-brand-icon">
+            <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 10C3 6.13 6.13 3 10 3s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#c9a84c" stroke-width="1.5"/>
+                <path d="M10 7v6M7.5 9.5l2.5-2.5 2.5 2.5" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <span class="sb-brand-name">Control<span>Gastos</span></span>
+    </div>
+
+    <p class="sb-section-label">Principal</p>
+    <ul class="sb-nav">
+        <li><a href="dashboard.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/></svg>
+            Inicio
+        </a></li>
+    </ul>
+
+    <p class="sb-section-label">Movimientos</p>
+    <ul class="sb-nav">
+        <li><a href="nuevoGasto.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg>
+            Nuevo Gasto
+        </a></li>
+        <li><a href="nuevoIngreso.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10h12M10 14l4-4-4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Nuevo Ingreso
+        </a></li>
+    </ul>
+
+    <p class="sb-section-label">Gestión</p>
+    <ul class="sb-nav">
+        <li><a href="categoriasYSubCategorias.html" class="active">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h14M3 10h10M3 15h6" stroke-linecap="round"/></svg>
+            Categorías
+        </a></li>
+        <li><a href="metodosPago.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16" stroke-linecap="round"/></svg>
+            Métodos de Pago
+        </a></li>
+        <li><a href="deudores.html">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.31 2.69-6 6-6"/><path d="M14 12v5M11.5 14.5l2.5-2.5 2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Deudores
+        </a></li>
+    </ul>
+
+    <div class="sb-spacer"></div>
+
+    <div class="sb-user">
+        <div class="sb-avatar" id="sb-initial">U</div>
+        <div class="sb-user-info">
+            <div class="sb-user-name" id="user-name">Usuario</div>
+            <div class="sb-user-role">Plan gratuito</div>
+        </div>
+        <button class="sb-logout" id="btn-logout" title="Cerrar sesión">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 7l3 3-3 3M16 10H8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 3H5a1 1 0 00-1 1v12a1 1 0 001 1h5" stroke-linecap="round"/></svg>
+        </button>
+    </div>
+</aside>
+
+<div class="main">
+
+    <header class="topbar">
+        <div>
+            <div class="topbar-title">Categorías y <span>Subcategorías</span></div>
+            <div class="topbar-sub">Organiza la estructura de tus gastos e ingresos</div>
+        </div>
+        <button class="btn-primary-action" id="btn-open-cat-modal">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg>
+            Nueva Categoría de Gasto
+        </button>
+    </header>
+
+    <div class="content">
+        <div class="section-header" style="margin-bottom: 1.5rem;">
+            <h3 style="font-family: 'Fraunces', serif; font-weight: 300; color: var(--rust);">Categorías de Gastos</h3>
+        </div>
+        <div class="categories-grid" id="categories-grid">
+        </div>
+
+        <hr style="margin: 3rem 0; border: none; border-top: 1px solid var(--line);">
+
+        <div class="section-header" style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-family: 'Fraunces', serif; font-weight: 300; color: var(--sage);">Categorías de Ingresos</h3>
+        </div>
+        
+        <div id="income-list-container" style="background: white; border-radius: 14px; border: 1px solid var(--line); box-shadow: var(--shadow);">
+            <div id="income-categories-list">
+            </div>
+            <button class="add-subcat-btn" id="btn-open-income-modal" style="border-top: 1px solid var(--line); padding: 1rem; color: var(--sage);">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg>
+                Nueva categoría de ingreso
+            </button>
+        </div>
+
+        <div class="empty-state" id="empty-state" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 5h18M3 10h14M3 15h8" stroke-linecap="round"/></svg>
+            <p>Aún no tienes categorías.</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal-cat">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="cat-modal-title">Nueva Categoría</h3>
+            <button class="modal-close" data-close="modal-cat">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l10 10M15 5L5 15" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <form id="form-category">
+            <input type="hidden" id="edit-cat-id">
+            <input type="hidden" id="cat-type-input" value="gasto">
+            <div class="modal-body">
+                <div class="field">
+                    <label>Nombre de la categoría</label>
+                    <input type="text" id="cat-name-input" placeholder="ej. Alimentación" required>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button type="submit" class="btn-save">Guardar categoría</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal-sub">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="sub-modal-title">Nueva Subcategoría</h3>
+            <button class="modal-close" data-close="modal-sub">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 5l10 10M15 5L5 15" stroke-linecap="round"/></svg>
+            </button>
+        </div>
+        <form id="form-subcategory">
+            <input type="hidden" id="parent-cat-id">
+            <input type="hidden" id="edit-sub-id">
+            <div class="modal-body">
+                <div class="modal-parent-hint">Categoría padre: <b id="parent-name-display">—</b></div>
+                <div class="field">
+                    <label>Nombre de la subcategoría</label>
+                    <input type="text" id="sub-name-input" placeholder="ej. Restaurantes" required>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button type="submit" class="btn-save sage">Guardar subcategoría</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script type="module" src="../js/main.js"></script>
+<script type="module" src="../js/categorias.js"></script>
+</body>
+</html>
