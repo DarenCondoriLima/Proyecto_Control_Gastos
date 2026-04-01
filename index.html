@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ControlGastos — Cargando</title>
+</head>
+<body>
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif;">
+        <p>Verificando sesión...</p>
+    </div>
+
+    <script type="module">
+        import { supabase } from './js/supabase.js';
+
+        async function checkRedirect() {
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session) {
+                // Si hay sesión, va directo al Dashboard
+                window.location.href = './html/dashboard.html';
+            } else {
+                // Si no hay sesión, va al Login
+                window.location.href = './html/login.html';
+            }
+        }
+
+        checkRedirect();
+    </script>
+</body>
+</html>
