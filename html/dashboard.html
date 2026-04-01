@@ -6,6 +6,7 @@
     <title>ControlGastos — Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/sidebar.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,60 +38,7 @@
             overflow-x: hidden;
         }
 
-        /* ─── SIDEBAR ─── */
-        .sidebar {
-            width: var(--sidebar-w);
-            min-height: 100vh;
-            background: var(--ink);
-            display: flex;
-            flex-direction: column;
-            padding: 2rem 1.25rem;
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
-            z-index: 100;
-        }
-
-        .sb-brand {
-            display: flex; align-items: center; gap: 0.65rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid rgba(245,240,232,0.08);
-            margin-bottom: 2rem;
-        }
-
-        .sb-brand-icon {
-            width: 34px; height: 34px;
-            border: 1.5px solid var(--gold);
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .sb-brand-name { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 300; color: var(--paper); }
-        .sb-brand-name span { color: var(--gold); }
-
-        .sb-nav { list-style: none; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 2px; }
-        .sb-nav a {
-            display: flex; align-items: center; gap: 0.65rem;
-            padding: 0.6rem 0.75rem; border-radius: 8px;
-            font-size: 0.83rem; color: rgba(245,240,232,0.55);
-            text-decoration: none; transition: all 0.2s;
-        }
-        .sb-nav a:hover { color: var(--paper); background: rgba(245,240,232,0.06); }
-        .sb-nav a.active { color: var(--gold); background: rgba(201,168,76,0.1); font-weight: 500; }
-
-        .sb-spacer { flex: 1; }
-
-        .sb-user {
-            display: flex; align-items: center; gap: 0.65rem;
-            padding: 0.75rem; border-radius: 10px;
-            background: rgba(245,240,232,0.05);
-            border: 1px solid rgba(245,240,232,0.08);
-        }
-
-        .sb-avatar {
-            width: 32px; height: 32px; background: var(--gold);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-family: 'Fraunces', serif; font-size: 0.85rem; font-weight: 600;
-        }
+        /* Sidebar styles moved to ../css/sidebar.css */
 
         /* ─── MAIN CONTENT ─── */
         .main {
@@ -187,47 +135,13 @@
 
         @media (max-width: 1024px) {
             .dashboard-layout { grid-template-columns: 1fr; }
-            .sidebar { transform: translateX(-100%); }
-            .main { margin-left: 0; }
         }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sb-brand">
-            <div class="sb-brand-icon">
-                <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 10C3 6.13 6.13 3 10 3s7 3.13 7 7-3.13 7-7 7-7-3.13-7-7z" stroke="#c9a84c" stroke-width="1.5"/>
-                </svg>
-            </div>
-            <span class="sb-brand-name">Control<span>Gastos</span></span>
-        </div>
-
-        <p style="color: rgba(245,240,232,0.3); font-size: 0.6rem; text-transform: uppercase; margin-bottom: 0.5rem; padding-left: 0.5rem;">Principal</p>
-        <ul class="sb-nav">
-            <li><a href="dashboard.html" class="active">Inicio</a></li>
-            <li><a href="nuevoGasto.html">Nuevo Gasto</a></li>
-            <li><a href="nuevoIngreso.html">Nuevo Ingreso</a></li>
-        </ul>
-
-        <p style="color: rgba(245,240,232,0.3); font-size: 0.6rem; text-transform: uppercase; margin-top: 1.5rem; margin-bottom: 0.5rem; padding-left: 0.5rem;">Gestión</p>
-        <ul class="sb-nav">
-            <li><a href="categoriasYSubCategorias.html">Categorías</a></li>
-            <li><a href="metodosPago.html">Métodos de Pago</a></li>
-            <li><a href="deudores.html">Deudores</a></li>
-        </ul>
-
-        <div class="sb-spacer"></div>
-
-        <div class="sb-user">
-            <div class="sb-avatar" id="sb-initial">U</div>
-            <div class="sb-user-info" style="margin-left: 10px;">
-                <div class="sb-user-name" id="user-name" style="color: white; font-size: 0.8rem;">Usuario</div>
-                <div style="color: gray; font-size: 0.6rem;">Cibertec Arequipa</div>
-            </div>
-        </div>
-    </aside>
+    <div id="sidebar-root"></div>
+    <script src="../js/sidebar-component.js"></script>
 
     <div class="main">
         <header class="topbar">
