@@ -1,0 +1,331 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --ink: #0f0e0d;
+            --paper: #f5f0e8;
+            --cream: #ede8dc;
+            --cream2: #e6e0d2;
+            --gold: #c9a84c;
+            --gold-light: rgba(201,168,76,0.12);
+            --sage: #7a8c70;
+            --sage-light: rgba(122,140,112,0.15);
+            --rust: #c05c3a;
+            --rust-light: rgba(192,92,58,0.1);
+            --blue: #5e7a8c;
+            --blue-light: rgba(94,122,140,0.12);
+            --muted: #8a8070;
+            --line: rgba(15,14,13,0.08);
+            --sidebar-w: 220px;
+            --shadow: 0 2px 20px rgba(15,14,13,0.06);
+            --shadow-md: 0 4px 32px rgba(15,14,13,0.1);
+            --radius: 16px;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            display: flex;
+            overflow-x: hidden;
+        }
+
+        /* ─── MAIN ─── */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── TOPBAR ─── */
+        .topbar {
+            padding: 1.1rem 2rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--line);
+            background: rgba(245,240,232,0.85);
+            backdrop-filter: blur(12px);
+            position: sticky; top: 0; z-index: 50;
+        }
+        .topbar-title { font-family: 'Fraunces', serif; font-size: 1.35rem; font-weight: 300; }
+        .topbar-title span { color: var(--gold); font-style: italic; }
+        .topbar-actions { display: flex; gap: 0.5rem; }
+
+        .btn-action {
+            padding: 0.55rem 1.1rem; border: none; border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer;
+            font-size: 0.78rem; transition: all 0.18s; letter-spacing: 0.01em;
+        }
+        .btn-action.dark  { background: var(--ink); color: white; }
+        .btn-action.dark:hover  { background: #2a2825; transform: translateY(-1px); }
+        .btn-action.green { background: var(--sage); color: white; }
+        .btn-action.green:hover { background: #6a7c62; transform: translateY(-1px); }
+
+        .content { padding: 1.75rem 2rem; flex: 1; }
+
+        /* ─── KPI GRID ─── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.25rem 1.4rem;
+            border: 1px solid var(--line);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .kpi-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 3px;
+        }
+        .kpi-card.net::before   { background: linear-gradient(90deg, var(--gold), var(--sage)); }
+        .kpi-card.inc::before   { background: var(--sage); }
+        .kpi-card.exp::before   { background: var(--rust); }
+        .kpi-card.quot::before  { background: var(--gold); }
+        .kpi-card.debt::before  { background: var(--blue); }
+
+        .kpi-icon {
+            font-size: 1.2rem; margin-bottom: 0.6rem; opacity: 0.7;
+        }
+        .kpi-label {
+            font-size: 0.62rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.35rem;
+        }
+        .kpi-value {
+            font-family: 'Fraunces', serif; font-size: 1.5rem; font-weight: 300;
+            line-height: 1.1;
+        }
+        .kpi-trend {
+            font-size: 0.65rem; color: var(--muted); margin-top: 0.3rem;
+        }
+
+        /* ─── FILTROS ─── */
+        .filter-bar {
+            background: white; border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 1.1rem 1.4rem;
+            margin-bottom: 1.5rem; box-shadow: var(--shadow);
+        }
+        .filter-bar-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 0.9rem;
+        }
+        .filter-bar-title {
+            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--muted);
+        }
+        .filter-toggle-btn {
+            font-size: 0.7rem; background: var(--cream); border: none;
+            padding: 0.3rem 0.7rem; border-radius: 6px; cursor: pointer;
+            color: var(--muted); font-family: inherit;
+        }
+
+        /* Fila principal: periodo + tipo + botones — siempre visible */
+        .filter-main-row {
+            display: grid;
+            grid-template-columns: auto auto 1fr auto auto auto;
+            gap: 0.6rem;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        /* Fila avanzada: colapsable */
+        .filter-advanced {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr) auto;
+            gap: 0.6rem;
+            align-items: flex-end;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--line);
+        }
+        .filter-advanced.hidden { display: none; }
+
+        .filter-field { display: flex; flex-direction: column; gap: 0.3rem; }
+        .filter-field label {
+            font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: var(--muted);
+        }
+
+        .filter-select, .filter-input {
+            padding: 0.45rem 0.65rem; border: 1.5px solid var(--line);
+            border-radius: 9px; background: var(--paper);
+            font-family: inherit; font-size: 0.78rem; color: var(--ink);
+            transition: border-color 0.15s;
+            appearance: none; -webkit-appearance: none;
+        }
+        .filter-select:focus, .filter-input:focus {
+            outline: none; border-color: var(--gold);
+        }
+        .filter-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a8070'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.6rem center; padding-right: 1.8rem; }
+
+        .date-pair { display: flex; gap: 0.4rem; }
+        .date-pair .filter-input { min-width: 0; }
+
+        .btn-filter {
+            padding: 0.5rem 1rem; border: none; border-radius: 9px;
+            font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer;
+            font-size: 0.78rem; transition: all 0.15s; white-space: nowrap;
+        }
+        .btn-filter.primary { background: var(--ink); color: white; }
+        .btn-filter.primary:hover { background: #2a2825; }
+        .btn-filter.secondary { background: var(--cream2); color: var(--muted); }
+        .btn-filter.secondary:hover { background: var(--cream); }
+
+        /* ─── CHIPS PERIODO RÁPIDO ─── */
+        .period-chips {
+            display: flex; gap: 0.35rem; align-items: center;
+        }
+        .period-chip {
+            padding: 0.38rem 0.75rem; border: 1.5px solid var(--line);
+            border-radius: 20px; font-size: 0.72rem; cursor: pointer;
+            background: var(--paper); transition: all 0.15s; font-family: inherit;
+            color: var(--muted); font-weight: 500;
+        }
+        .period-chip.active, .period-chip:hover {
+            background: var(--ink); color: white; border-color: var(--ink);
+        }
+
+        /* ─── LAYOUT PRINCIPAL ─── */
+        /* Fila 1: gráfico de barras (ancho completo) */
+        .chart-bar-row {
+            margin-bottom: 1.25rem;
+        }
+        /* Fila 2: tabla | sidebar de gráficos */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 1.25rem;
+        }
+        /* Fila 3: métricas adicionales */
+        .bottom-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 340px;
+            gap: 1.25rem;
+            margin-top: 1.25rem;
+        }
+
+        /* ─── CARDS ─── */
+        .card {
+            background: white; border-radius: var(--radius); padding: 1.4rem;
+            border: 1px solid var(--line); box-shadow: var(--shadow);
+        }
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-title {
+            font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--muted);
+        }
+        .card-badge {
+            font-size: 0.62rem; background: var(--cream); padding: 0.22rem 0.55rem;
+            border-radius: 20px; color: var(--muted); font-weight: 500;
+        }
+
+        /* ─── TABLA DE TRANSACCIONES ─── */
+        .table-wrap { max-height: 420px; overflow-y: auto; }
+        .table-wrap::-webkit-scrollbar { width: 4px; }
+        .table-wrap::-webkit-scrollbar-thumb { background: var(--cream2); border-radius: 4px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            text-align: left; font-size: 0.62rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--muted); padding: 0.6rem 0.5rem;
+            border-bottom: 1.5px solid var(--line);
+            position: sticky; top: 0; background: white; z-index: 1;
+        }
+        tbody tr { transition: background 0.12s; }
+        tbody tr:hover { background: var(--paper); }
+        td { padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--line); font-size: 0.8rem; vertical-align: middle; }
+
+        .tx-badge {
+            display: inline-block; font-size: 0.6rem; padding: 0.18rem 0.5rem;
+            border-radius: 12px; background: var(--cream); font-weight: 500;
+            white-space: nowrap;
+        }
+        .tx-badge.income { background: var(--sage-light); color: var(--sage); }
+        .tx-badge.expense { background: var(--rust-light); color: var(--rust); }
+
+        .amount-cell { text-align: right; font-weight: 600; white-space: nowrap; }
+        .amount-cell.income { color: var(--sage); }
+        .amount-cell.expense { color: var(--rust); }
+
+        /* ─── GRÁFICOS DONA ─── */
+        .pie-legend { margin-top: 0.8rem; display: flex; flex-direction: column; gap: 0.35rem; }
+        .legend-item {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.72rem; padding: 0.25rem 0;
+        }
+        .legend-left { display: flex; align-items: center; gap: 0.4rem; overflow: hidden; }
+        .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .legend-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
+        .legend-pct { font-size: 0.6rem; color: var(--muted); margin-left: 2px; }
+        .legend-val { font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+
+        /* ─── BARRA DE PROGRESO PRESUPUESTO ─── */
+        .budget-item { margin-bottom: 0.85rem; }
+        .budget-item-header { display: flex; justify-content: space-between; font-size: 0.72rem; margin-bottom: 0.3rem; }
+        .budget-bar-track { height: 6px; background: var(--cream2); border-radius: 3px; overflow: hidden; }
+        .budget-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+        /* ─── CUOTAS ─── */
+        .installment-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.6rem 0; border-bottom: 1px solid var(--line); font-size: 0.78rem;
+        }
+        .installment-row:last-child { border-bottom: none; }
+        .inst-name { font-weight: 500; }
+        .inst-sub { font-size: 0.63rem; color: var(--muted); margin-top: 1px; }
+        .inst-amt { font-weight: 700; color: var(--rust); white-space: nowrap; }
+
+        /* ─── TENDENCIA MENSUAL (mini sparkline table) ─── */
+        .trend-empty { color: var(--muted); font-size: 0.75rem; text-align: center; padding: 1rem; }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 1200px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+            .bottom-row { grid-template-columns: 1fr 1fr; }
+            .bottom-row > :last-child { grid-column: 1 / -1; }
+        }
+        @media (max-width: 1024px) {
+            .main { margin-left: 0; width: 98vw; }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .filter-main-row { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 768px) {
+            .main { margin-left: 0; width: 98vw;}
+            .content { padding: 1rem; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .bottom-row { grid-template-columns: 1fr; }
+        }
+
+        /* ─── SKELETON LOADING ─── */
+        .skeleton {
+            background: linear-gradient(90deg, var(--cream) 25%, var(--cream2) 50%, var(--cream) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 6px;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        /* ─── FADE IN ─── */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .kpi-card { animation: fadeUp 0.35s ease both; }
+        .kpi-card:nth-child(1) { animation-delay: 0.05s; }
+        .kpi-card:nth-child(2) { animation-delay: 0.10s; }
+        .kpi-card:nth-child(3) { animation-delay: 0.15s; }
+        .kpi-card:nth-child(4) { animation-delay: 0.20s; }
+        .kpi-card:nth-child(5) { animation-delay: 0.25s; }

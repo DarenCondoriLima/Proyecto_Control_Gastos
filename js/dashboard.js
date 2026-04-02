@@ -1,256 +1,671 @@
 import { supabase } from './supabase.js';
 
-let pieChart, subPieChart;
-const palette = ['#c9a84c', '#7a8c70', '#c05c3a', '#5e7a8c', '#8c6b5e', '#a8a87a'];
+// ─────────────────────────────────────────────────────────────
+// ESTADO DE GRÁFICOS
+// ─────────────────────────────────────────────────────────────
+let pieChart, subPieChart, barChart, methodChart;
+const palette = ['#c9a84c','#7a8c70','#c05c3a','#5e7a8c','#8c6b5e','#a8a87a','#6b8c8c','#8c7a5e','#5e6b8c','#8c5e7a'];
 
-// --- 1. INICIALIZACIÓN ---
+// ─────────────────────────────────────────────────────────────
+// 1. INICIALIZACIÓN
+// ─────────────────────────────────────────────────────────────
 async function init() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return window.location.href = 'login.html';
 
-    // Perfil en Sidebar
-    const { data: profile } = await supabase.from('users').select('firstname_user').eq('id_user', user.id).single();
+    // Sidebar profile
+    const { data: profile } = await supabase
+        .from('users').select('firstname_user').eq('id_user', user.id).single();
     if (profile) {
-        document.getElementById('user-name').innerText = profile.firstname_user;
-        document.getElementById('sb-initial').innerText = profile.firstname_user.charAt(0).toUpperCase();
+        const nameEl  = document.getElementById('user-name');
+        const initEl  = document.getElementById('sb-initial');
+        if (nameEl) nameEl.innerText = profile.firstname_user;
+        if (initEl) initEl.innerText = profile.firstname_user.charAt(0).toUpperCase();
     }
 
-    // Cargar Selectores (Categorías y Tarjetas)
-    await Promise.all([
-        loadCategories(user.id),
-        loadCards(user.id)
-    ]);
-    
-    // Listener para subcategorías dinámicas
-    document.getElementById('filter-cat').addEventListener('change', (e) => {
-        loadSubcategories(e.target.value, user.id);
-    });
+    await Promise.all([loadCategories(user.id), loadCards(user.id)]);
 
-    // Listeners de botones
+    // Listeners de filtros
+    document.getElementById('filter-cat').addEventListener('change', e => loadSubcategories(e.target.value, user.id));
     document.getElementById('btn-apply-filters').addEventListener('click', () => loadDashboardData(user.id));
-    
     document.getElementById('btn-reset').addEventListener('click', () => {
-        setTimeout(() => {
-            setDefaultDates();
-            loadDashboardData(user.id);
-        }, 10);
+        document.getElementById('filter-from').value   = '';
+        document.getElementById('filter-to').value     = '';
+        document.getElementById('filter-cat').value    = '';
+        document.getElementById('filter-subcat').value = '';
+        document.getElementById('filter-card').value   = '';
+        document.getElementById('filter-method').value = '';
+        document.getElementById('filter-type').value   = 'all';
+        document.getElementById('filter-subcat').disabled = true;
+        setDefaultPeriod();
+        loadDashboardData(user.id);
     });
 
-    // Carga Inicial
-    setDefaultDates();
-    loadDashboardData(user.id);
+    // Chips de periodo rápido
+    document.querySelectorAll('.period-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            applyPeriodChip(chip.dataset.period);
+            loadDashboardData(user.id);
+        });
+    });
+
+    // Carga inicial
+    setDefaultPeriod();
+    // Marcar chip "Este mes" como activo
+    document.querySelector('[data-period="month"]')?.classList.add('active');
+    await loadDashboardData(user.id);
 }
 
-// --- 2. SELECTORES DINÁMICOS ---
+// ─────────────────────────────────────────────────────────────
+// 2. SELECTORES DINÁMICOS
+// ─────────────────────────────────────────────────────────────
 async function loadCategories(userId) {
-    const { data } = await supabase.from('categories').select('id_cat, name_cat').eq('id_user', userId).eq('deleted_cat', false);
-    const select = document.getElementById('filter-cat');
-    data?.forEach(c => select.add(new Option(c.name_cat, c.id_cat)));
+    const { data } = await supabase.from('categories')
+        .select('id_cat, name_cat').eq('id_user', userId).eq('deleted_cat', false);
+    const sel = document.getElementById('filter-cat');
+    data?.forEach(c => sel.add(new Option(c.name_cat, c.id_cat)));
 }
 
 async function loadSubcategories(catId, userId) {
-    const subSelect = document.getElementById('filter-subcat');
-    subSelect.innerHTML = '<option value="">Subcategoría</option>';
-    
-    if (!catId) {
-        subSelect.disabled = true;
-        return;
-    }
-
-    const { data } = await supabase.from('subcategories').select('id_subcat, name_subcat').eq('id_category', catId).eq('id_user', userId).eq('deleted_subcat', false);
-    data?.forEach(s => subSelect.add(new Option(s.name_subcat, s.id_subcat)));
-    subSelect.disabled = false;
+    const sel = document.getElementById('filter-subcat');
+    sel.innerHTML = '<option value="">Todas</option>';
+    if (!catId) { sel.disabled = true; return; }
+    const { data } = await supabase.from('subcategories')
+        .select('id_subcat, name_subcat')
+        .eq('id_category', catId).eq('id_user', userId).eq('deleted_subcat', false);
+    data?.forEach(s => sel.add(new Option(s.name_subcat, s.id_subcat)));
+    sel.disabled = false;
 }
 
 async function loadCards(userId) {
-    const { data } = await supabase.from('cards').select('id_card, name_card').eq('id_user', userId).eq('deleted_card', false);
-    const select = document.getElementById('filter-card');
-    data?.forEach(c => select.add(new Option(c.name_card, c.id_card)));
+    const { data } = await supabase.from('cards')
+        .select('id_card, name_card').eq('id_user', userId).eq('deleted_card', false);
+    const sel = document.getElementById('filter-card');
+    data?.forEach(c => sel.add(new Option(c.name_card, c.id_card)));
 }
 
-// --- 3. LOGICA DE FILTRADO (CORREGIDA) ---
-async function fetchFilteredData(table, userId, filters) {
-    const isExp = table === 'expenses';
-    const dateCol = isExp ? 'date_exp' : 'date_inc';
-    
-    // 1. Configurar selección básica
-    let selectQuery = isExp 
-        ? '*, categories(name_cat), subcategories(name_subcat), cards(name_card)' 
-        : '*'; 
+// ─────────────────────────────────────────────────────────────
+// 3. CHIPS DE PERIODO
+// ─────────────────────────────────────────────────────────────
+function applyPeriodChip(period) {
+    const now   = new Date();
+    const year  = now.getFullYear();
+    const month = now.getMonth(); // 0-indexed
 
-    let query = supabase.from(table).select(selectQuery).eq('id_user', userId);
+    // Limpiar fechas manuales
+    document.getElementById('filter-from').value = '';
+    document.getElementById('filter-to').value   = '';
 
-    // 2. Filtros de fecha
-    if (filters.from) query = query.gte(dateCol, filters.from);
-    if (filters.to) query = query.lte(dateCol, filters.to);
-
-    // ... (mantén tu lógica de filtros por mes/año aquí)
-
-    // 3. Filtros específicos por tabla
-    if (isExp) {
-        if (filters.cat) query = query.eq('id_category', filters.cat);
-        if (filters.subcat) query = query.eq('id_subcat', filters.subcat);
-        if (filters.card) query = query.eq('id_card', filters.card);
-        query = query.eq('deleted_exp', false); // Esta sí existe en expenses
-    } else {
-        // ELIMINAMOS query.eq('deleted_inc', false) porque no existe
-        // Solo filtramos ingresos por fecha y usuario
+    if (period === 'month') {
+        document.getElementById('filter-month').value = String(month + 1).padStart(2, '0');
+        document.getElementById('filter-year').value  = year;
+    } else if (period === 'quarter') {
+        // Trimestre actual: del primer día del trimestre al hoy
+        const qStart = new Date(year, Math.floor(month / 3) * 3, 1);
+        document.getElementById('filter-from').value = qStart.toISOString().split('T')[0];
+        document.getElementById('filter-to').value   = now.toISOString().split('T')[0];
+        document.getElementById('filter-month').value = '';
+        document.getElementById('filter-year').value  = '';
+    } else if (period === 'year') {
+        document.getElementById('filter-from').value = `${year}-01-01`;
+        document.getElementById('filter-to').value   = `${year}-12-31`;
+        document.getElementById('filter-month').value = '';
+        document.getElementById('filter-year').value  = '';
     }
-
-    const result = await query.order(dateCol, { ascending: false });
-    
-    if (result.error) {
-        console.error(`Error en ${table}:`, result.error.message);
-    }
-    return result;
 }
 
-// --- 4. CARGA Y PROCESAMIENTO ---
+function setDefaultPeriod() {
+    const now = new Date();
+    document.getElementById('filter-year').value  = now.getFullYear();
+    document.getElementById('filter-month').value = String(now.getMonth() + 1).padStart(2, '0');
+}
+
+// ─────────────────────────────────────────────────────────────
+// 4. CONSTRUCCIÓN DE RANGO DE FECHAS
+// ─────────────────────────────────────────────────────────────
+function buildDateRange(filters) {
+    // Prioridad 1: fechas manuales (from/to)
+    if (filters.from || filters.to) {
+        return { from: filters.from || null, to: filters.to || null };
+    }
+    // Prioridad 2: mes + año
+    if (filters.month && filters.year) {
+        const lastDay = new Date(parseInt(filters.year), parseInt(filters.month), 0).getDate();
+        return {
+            from: `${filters.year}-${filters.month}-01`,
+            to:   `${filters.year}-${filters.month}-${String(lastDay).padStart(2, '0')}`
+        };
+    }
+    return { from: null, to: null };
+}
+
+// ─────────────────────────────────────────────────────────────
+// 5. FETCH GASTOS
+//    Columnas reales del schema:
+//    installments (no installments_exp), installment_amt, deleted_exp
+// ─────────────────────────────────────────────────────────────
+async function fetchExpenses(userId, filters, dateRange) {
+    let q = supabase.from('expenses')
+        .select('*, categories(name_cat), subcategories(name_subcat), cards(name_card)')
+        .eq('id_user', userId)
+        .eq('deleted_exp', false);
+
+    if (dateRange.from) q = q.gte('date_exp', dateRange.from);
+    if (dateRange.to)   q = q.lte('date_exp', dateRange.to);
+    if (filters.cat)    q = q.eq('id_category', filters.cat);
+    if (filters.subcat) q = q.eq('id_subcat',   filters.subcat);
+    if (filters.card)   q = q.eq('id_card',     filters.card);
+    if (filters.method) q = q.eq('payment_method', filters.method);
+
+    const { data, error } = await q.order('date_exp', { ascending: false });
+    if (error) console.error('[expenses]', error.message);
+    return data || [];
+}
+
+// ─────────────────────────────────────────────────────────────
+// 6. FETCH INGRESOS
+//    incomes: no tiene deleted_inc, sí tiene id_category
+// ─────────────────────────────────────────────────────────────
+async function fetchIncomes(userId, filters, dateRange) {
+    let q = supabase.from('incomes')
+        .select('*, categories(name_cat)')
+        .eq('id_user', userId);
+
+    if (dateRange.from) q = q.gte('date_inc', dateRange.from);
+    if (dateRange.to)   q = q.lte('date_inc', dateRange.to);
+    // Método de pago en incomes: solo Cash / Debit
+    if (filters.method && ['Cash','Debit'].includes(filters.method)) {
+        q = q.eq('payment_method', filters.method);
+    }
+
+    const { data, error } = await q.order('date_inc', { ascending: false });
+    if (error) console.error('[incomes]', error.message);
+    return data || [];
+}
+
+// ─────────────────────────────────────────────────────────────
+// 7. FETCH PRESUPUESTOS DEL MES (para comparar con gastos reales)
+// ─────────────────────────────────────────────────────────────
+async function fetchBudgets(userId, month, year) {
+    if (!month || !year) return [];
+    const { data, error } = await supabase.from('budgets')
+        .select('*, categories(name_cat)')
+        .eq('id_user', userId)
+        .eq('month_budget', parseInt(month))
+        .eq('year_budget',  parseInt(year));
+    if (error) console.error('[budgets]', error.message);
+    return data || [];
+}
+
+// ─────────────────────────────────────────────────────────────
+// 8. CARGA PRINCIPAL
+// ─────────────────────────────────────────────────────────────
 async function loadDashboardData(userId) {
     const filters = {
-        from: document.getElementById('filter-from').value,
-        to: document.getElementById('filter-to').value,
-        month: document.getElementById('filter-month').value,
-        year: document.getElementById('filter-year').value,
-        cat: document.getElementById('filter-cat').value,
+        from:   document.getElementById('filter-from').value,
+        to:     document.getElementById('filter-to').value,
+        month:  document.getElementById('filter-month').value,
+        year:   document.getElementById('filter-year').value,
+        cat:    document.getElementById('filter-cat').value,
         subcat: document.getElementById('filter-subcat').value,
-        card: document.getElementById('filter-card').value,
+        card:   document.getElementById('filter-card').value,
         method: document.getElementById('filter-method').value,
-        type: document.getElementById('filter-type').value
+        type:   document.getElementById('filter-type').value
     };
 
-    const [expRes, incRes, debtsRes] = await Promise.all([
-        filters.type !== 'income' ? fetchFilteredData('expenses', userId, filters) : { data: [] },
-        filters.type !== 'expense' ? fetchFilteredData('incomes', userId, filters) : { data: [] },
-        supabase.from('debts').select('amount_debt, amount_paid').eq('id_user', userId).eq('deleted_debt', false).neq('status_debt', 'Paid')
+    const dateRange = buildDateRange(filters);
+
+    const [expenses, incomes, debtsRes, budgets] = await Promise.all([
+        filters.type !== 'income'   ? fetchExpenses(userId, filters, dateRange) : [],
+        filters.type !== 'expense'  ? fetchIncomes(userId, filters, dateRange)  : [],
+        supabase.from('debts').select('amount_debt, amount_paid')
+            .eq('id_user', userId).eq('deleted_debt', false).neq('status_debt', 'Paid'),
+        fetchBudgets(userId, filters.month, filters.year)
     ]);
 
-    const expenses = expRes.data || [];
-    const incomes = incRes.data || [];
     const debts = debtsRes.data || [];
 
-    // Cálculos de KPIs
-    const totalExp = expenses.reduce((acc, curr) => acc + curr.amount_exp, 0);
-    const totalInc = incomes.reduce((acc, curr) => acc + curr.amount_inc, 0);
-    const totalDebtToCollect = debts.reduce((acc, curr) => acc + (curr.amount_debt - curr.amount_paid), 0);
+    // ── KPIs ────────────────────────────────────────────────
+    const totalExp  = expenses.reduce((s, e) => s + parseFloat(e.amount_exp),  0);
+    const totalInc  = incomes.reduce( (s, i) => s + parseFloat(i.amount_inc),  0);
+    const totalDebt = debts.reduce(   (s, d) => s + parseFloat(d.amount_debt) - parseFloat(d.amount_paid), 0);
 
-    // Lógica de Cuotas (Cálculo mensual)
-    const installmentSum = expenses.filter(e => e.installments_exp > 1)
-        .reduce((acc, curr) => acc + (curr.amount_exp / curr.installments_exp), 0);
+    // Cuotas: usa installment_amt (columna real) con fallback a división
+    const gastosCuota = expenses.filter(e => parseInt(e.installments) > 1);
+    const cuotasMes   = gastosCuota.reduce((s, e) => {
+        const amt = e.installment_amt != null
+            ? parseFloat(e.installment_amt)
+            : parseFloat(e.amount_exp) / parseInt(e.installments);
+        return s + amt;
+    }, 0);
 
-    updateKPIs(totalExp, totalInc, totalDebtToCollect, installmentSum);
+    updateKPIs(totalExp, totalInc, totalDebt, cuotasMes, expenses.length, incomes.length, gastosCuota.length);
 
-    // Renderizado de UI
-    let transactions = [
-        ...expenses.map(e => ({ date: e.date_exp, cat: e.categories?.name_cat, desc: e.description_exp, amount: e.amount_exp, type: 'expense' })),
-        ...incomes.map(i => ({ date: i.date_inc, cat: i.categories?.name_cat, desc: i.description_inc, amount: i.amount_inc, type: 'income' }))
+    // ── Renderizado ─────────────────────────────────────────
+    renderTable(expenses, incomes);
+    renderBarChart(expenses, incomes, dateRange, filters);
+    renderPieChart(expenses);
+    renderSubPieChart(expenses);
+    renderMethodChart(expenses);
+    renderInstallments(gastosCuota, cuotasMes);
+    renderBudgetBars(budgets, expenses, filters);
+}
+
+// ─────────────────────────────────────────────────────────────
+// 9. KPIs
+// ─────────────────────────────────────────────────────────────
+function updateKPIs(exp, inc, debt, cuotas, expCount, incCount, quotCount) {
+    const fmt = n => n.toLocaleString('es-PE', { minimumFractionDigits: 2 });
+    const net = inc - exp;
+
+    document.getElementById('total-exp-display').innerText         = `S/ ${fmt(exp)}`;
+    document.getElementById('total-inc-display').innerText         = `S/ ${fmt(inc)}`;
+    document.getElementById('card-installments-display').innerText = `S/ ${fmt(cuotas)}`;
+    document.getElementById('debt-total-display').innerText        = `S/ ${fmt(debt)}`;
+    document.getElementById('exp-count').innerText                 = `${expCount} registros`;
+    document.getElementById('inc-count').innerText                 = `${incCount} registros`;
+    document.getElementById('quot-count').innerText                = `${quotCount} pagos en cuotas`;
+
+    const netEl = document.getElementById('net-balance-display');
+    netEl.innerText   = `S/ ${fmt(net)}`;
+    netEl.style.color = net < 0 ? 'var(--rust)' : (net > 0 ? 'var(--sage)' : 'var(--ink)');
+
+    const trendEl = document.getElementById('net-trend');
+    if (exp > 0) {
+        const pct = ((inc - exp) / exp * 100).toFixed(1);
+        trendEl.innerText = net >= 0
+            ? `Ahorro del ${pct}% sobre gastos`
+            : `Déficit del ${Math.abs(pct)}% sobre ingresos`;
+        trendEl.style.color = net >= 0 ? 'var(--sage)' : 'var(--rust)';
+    } else {
+        trendEl.innerText = '—';
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+// 10. TABLA DE TRANSACCIONES
+// ─────────────────────────────────────────────────────────────
+function renderTable(expenses, incomes) {
+    const body = document.getElementById('transactions-body');
+
+    const rows = [
+        ...expenses.map(e => ({
+            date:   e.date_exp,
+            type:   'expense',
+            cat:    e.categories?.name_cat    || 'Sin categoría',
+            subcat: e.subcategories?.name_subcat || '',
+            desc:   e.description_exp,
+            amount: parseFloat(e.amount_exp),
+            method: e.payment_method,
+            cuotas: parseInt(e.installments) > 1
+                ? `${e.installments} cuotas · S/ ${e.installment_amt != null ? parseFloat(e.installment_amt).toFixed(2) : (parseFloat(e.amount_exp)/parseInt(e.installments)).toFixed(2)}/c`
+                : null
+        })),
+        ...incomes.map(i => ({
+            date:   i.date_inc,
+            type:   'income',
+            cat:    i.categories?.name_cat || 'Ingreso',
+            subcat: '',
+            desc:   i.description_inc,
+            amount: parseFloat(i.amount_inc),
+            method: i.payment_method,
+            cuotas: null
+        }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    renderTable(transactions);
-    renderPieChart(expenses); 
-    renderSubPieChart(expenses);
-    renderInstallmentList(expenses.filter(e => e.installments_exp > 1));
-}
+    document.getElementById('transaction-count').innerText = `${rows.length} registros`;
 
-// --- 5. RENDERIZADO DE UI ---
-function updateKPIs(exp, inc, debt, installments) {
-    document.getElementById('total-exp-display').innerText = `S/ ${exp.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
-    document.getElementById('total-inc-display').innerText = `S/ ${inc.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
-    document.getElementById('net-balance-display').innerText = `S/ ${(inc - exp).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
-    document.getElementById('debt-total-display').innerText = `S/ ${debt.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
-    document.getElementById('card-installments-display').innerText = `S/ ${installments.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
-}
-
-function renderTable(list) {
-    const body = document.getElementById('transactions-body');
-    document.getElementById('transaction-count').innerText = `${list.length} registros`;
-    
-    body.innerHTML = list.map(t => `
-        <tr>
-            <td style="padding: 1rem 0.5rem; color: var(--muted); border-bottom: 1px solid var(--line);">${t.date}</td>
-            <td style="padding: 1rem 0.5rem; border-bottom: 1px solid var(--line);"><span class="chart-badge">${t.cat || 'General'}</span></td>
-            <td style="padding: 1rem 0.5rem; border-bottom: 1px solid var(--line);">${t.desc || '-'}</td>
-            <td style="padding: 1rem 0.5rem; border-bottom: 1px solid var(--line); text-align: right; font-weight: 600; color: ${t.type === 'income' ? 'var(--sage)' : 'var(--rust)'};">
-                ${t.type === 'income' ? '+' : '-'} S/ ${t.amount.toFixed(2)}
-            </td>
-        </tr>
-    `).join('');
-}
-
-function renderInstallmentList(list) {
-    const body = document.getElementById('installments-body');
-    if (list.length === 0) {
-        body.innerHTML = '<tr><td colspan="2" style="color:var(--muted); padding:1rem; font-size:0.7rem;">No hay cuotas este periodo</td></tr>';
+    if (rows.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--muted);font-size:0.8rem;">No hay transacciones para el periodo seleccionado</td></tr>`;
         return;
     }
 
-    body.innerHTML = list.map(e => `
+    const methodLabel = { Cash: 'Efectivo', Debit: 'Débito', Credit: 'Crédito' };
+
+    body.innerHTML = rows.map(t => `
         <tr>
-            <td style="padding: 0.5rem 0;">
-                <div style="font-weight:500;">${e.description_exp}</div>
-                <div style="font-size:0.6rem; color:var(--muted);">${e.cards?.name_card || 'Tarjeta'}</div>
+            <td style="white-space:nowrap; color:var(--muted);">${t.date}</td>
+            <td><span class="tx-badge ${t.type}">${t.type === 'income' ? 'Ingreso' : 'Gasto'}</span></td>
+            <td>
+                <span class="tx-badge">${t.cat}</span>
+                ${t.subcat ? `<span class="tx-badge" style="margin-left:3px;background:var(--cream2);">${t.subcat}</span>` : ''}
             </td>
-            <td style="text-align:right; font-weight:600; color:var(--rust);">
-                S/ ${(e.amount_exp / e.installments_exp).toFixed(2)}
+            <td>
+                <div style="font-size:0.78rem;">${t.desc || '—'}</div>
+                ${t.cuotas ? `<div style="font-size:0.62rem;color:var(--gold);margin-top:1px;">🗓 ${t.cuotas}</div>` : ''}
+                ${t.method ? `<div style="font-size:0.62rem;color:var(--muted);">${methodLabel[t.method] || t.method}</div>` : ''}
+            </td>
+            <td class="amount-cell ${t.type}">
+                ${t.type === 'income' ? '+' : '−'} S/ ${t.amount.toFixed(2)}
             </td>
         </tr>
     `).join('');
 }
 
-function renderPieChart(expenses) {
-    const catMap = {};
-    expenses.forEach(e => {
-        const name = e.categories?.name_cat || 'Otros';
-        catMap[name] = (catMap[name] || 0) + e.amount_exp;
-    });
+// ─────────────────────────────────────────────────────────────
+// 11. GRÁFICO DE BARRAS — Ingresos vs Gastos por periodo
+// ─────────────────────────────────────────────────────────────
+function renderBarChart(expenses, incomes, dateRange, filters) {
+    if (barChart) barChart.destroy();
 
+    // Agrupar por semana si hay un mes, por mes si hay año completo / trimestre
+    let labels = [], incData = [], expData = [];
+    const groupByMonth = !filters.month; // si no hay mes específico, agrupa por mes
+
+    if (groupByMonth) {
+        // Agrupar por mes (YYYY-MM)
+        const incMap = {}, expMap = {};
+        incomes.forEach(i => {
+            const key = i.date_inc?.substring(0, 7);
+            if (key) incMap[key] = (incMap[key] || 0) + parseFloat(i.amount_inc);
+        });
+        expenses.forEach(e => {
+            const key = e.date_exp?.substring(0, 7);
+            if (key) expMap[key] = (expMap[key] || 0) + parseFloat(e.amount_exp);
+        });
+        const allKeys = Array.from(new Set([...Object.keys(incMap), ...Object.keys(expMap)])).sort();
+        const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        labels  = allKeys.map(k => { const [y, m] = k.split('-'); return `${monthNames[parseInt(m)-1]} ${y}`; });
+        incData = allKeys.map(k => incMap[k] || 0);
+        expData = allKeys.map(k => expMap[k] || 0);
+        document.getElementById('bar-chart-label').innerText = 'Por mes';
+    } else {
+        // Agrupar por día dentro del mes
+        const incMap = {}, expMap = {};
+        incomes.forEach(i => {
+            if (i.date_inc) incMap[i.date_inc] = (incMap[i.date_inc] || 0) + parseFloat(i.amount_inc);
+        });
+        expenses.forEach(e => {
+            if (e.date_exp) expMap[e.date_exp] = (expMap[e.date_exp] || 0) + parseFloat(e.amount_exp);
+        });
+        const allKeys = Array.from(new Set([...Object.keys(incMap), ...Object.keys(expMap)])).sort();
+        labels  = allKeys.map(k => k.substring(5)); // MM-DD
+        incData = allKeys.map(k => incMap[k] || 0);
+        expData = allKeys.map(k => expMap[k] || 0);
+        document.getElementById('bar-chart-label').innerText = 'Por día';
+    }
+
+    if (labels.length === 0) {
+        document.getElementById('bar-chart-label').innerText = 'Sin datos';
+        return;
+    }
+
+    barChart = new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Ingresos',
+                    data: incData,
+                    backgroundColor: 'rgba(122,140,112,0.75)',
+                    borderColor: '#7a8c70',
+                    borderWidth: 1.5,
+                    borderRadius: 5,
+                    borderSkipped: false
+                },
+                {
+                    label: 'Gastos',
+                    data: expData,
+                    backgroundColor: 'rgba(192,92,58,0.75)',
+                    borderColor: '#c05c3a',
+                    borderWidth: 1.5,
+                    borderRadius: 5,
+                    borderSkipped: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { font: { family: 'DM Sans', size: 11 }, boxWidth: 10, padding: 16 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` S/ ${parseFloat(ctx.raw).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`
+                    }
+                }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 10 } } },
+                y: {
+                    grid: { color: 'rgba(15,14,13,0.05)' },
+                    ticks: {
+                        font: { family: 'DM Sans', size: 10 },
+                        callback: v => `S/ ${v.toLocaleString('es-PE')}`
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ─────────────────────────────────────────────────────────────
+// 12. DONA — Categorías
+// ─────────────────────────────────────────────────────────────
+function renderPieChart(expenses) {
     if (pieChart) pieChart.destroy();
-    const labels = Object.keys(catMap);
-    const values = Object.values(catMap);
+
+    const map = {};
+    expenses.forEach(e => {
+        const k = e.categories?.name_cat || 'Sin categoría';
+        map[k]  = (map[k] || 0) + parseFloat(e.amount_exp);
+    });
+    const labels = Object.keys(map);
+    const values = Object.values(map);
+    const total  = values.reduce((s, v) => s + v, 0);
+
+    const legendEl = document.getElementById('pie-legend');
+
+    if (labels.length === 0) {
+        legendEl.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;text-align:center;padding:1rem;">Sin gastos</div>';
+        return;
+    }
 
     pieChart = new Chart(document.getElementById('pieChart'), {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: values, backgroundColor: palette, borderWidth: 2, borderColor: '#ffffff' }] },
-        options: { cutout: '75%', plugins: { legend: { display: false } } }
+        data: {
+            labels,
+            datasets: [{ data: values, backgroundColor: palette, borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: {
+            cutout: '68%',
+            plugins: { legend: { display: false }, tooltip: {
+                callbacks: { label: ctx => ` S/ ${parseFloat(ctx.raw).toFixed(2)} (${(ctx.raw/total*100).toFixed(1)}%)` }
+            }}
+        }
     });
 
-    const legend = document.getElementById('pie-legend');
-    legend.innerHTML = labels.map((label, i) => `
+    legendEl.innerHTML = labels.map((lbl, i) => `
         <div class="legend-item">
-            <div class="legend-left"><span class="legend-dot" style="background:${palette[i % palette.length]}"></span><span>${label}</span></div>
+            <div class="legend-left">
+                <span class="legend-dot" style="background:${palette[i % palette.length]}"></span>
+                <span class="legend-name">${lbl}</span>
+                <span class="legend-pct">${(values[i]/total*100).toFixed(1)}%</span>
+            </div>
             <span class="legend-val">S/ ${values[i].toFixed(2)}</span>
         </div>`).join('');
 }
 
+// ─────────────────────────────────────────────────────────────
+// 13. DONA — Subcategorías
+// ─────────────────────────────────────────────────────────────
 function renderSubPieChart(expenses) {
-    const subMap = {};
-    expenses.forEach(e => {
-        const name = e.subcategories?.name_subcat || 'Sin subcategoría';
-        subMap[name] = (subMap[name] || 0) + e.amount_exp;
-    });
-
     if (subPieChart) subPieChart.destroy();
-    const labels = Object.keys(subMap);
-    const values = Object.values(subMap);
+
+    const map = {};
+    expenses.forEach(e => {
+        const k = e.subcategories?.name_subcat || 'Sin subcategoría';
+        map[k]  = (map[k] || 0) + parseFloat(e.amount_exp);
+    });
+    const labels = Object.keys(map);
+    const values = Object.values(map);
+    const total  = values.reduce((s, v) => s + v, 0);
+
+    const legendEl = document.getElementById('subpie-legend');
+
+    if (labels.length === 0) {
+        legendEl.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;text-align:center;padding:1rem;">Sin gastos</div>';
+        return;
+    }
 
     subPieChart = new Chart(document.getElementById('subPieChart'), {
         type: 'doughnut',
-        data: { labels: labels, datasets: [{ data: values, backgroundColor: palette, borderWidth: 2, borderColor: '#ffffff' }] },
-        options: { cutout: '75%', plugins: { legend: { display: false } } }
+        data: {
+            labels,
+            datasets: [{ data: values, backgroundColor: palette.slice().reverse(), borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: {
+            cutout: '68%',
+            plugins: { legend: { display: false }, tooltip: {
+                callbacks: { label: ctx => ` S/ ${parseFloat(ctx.raw).toFixed(2)} (${(ctx.raw/total*100).toFixed(1)}%)` }
+            }}
+        }
     });
 
-    const legend = document.getElementById('subpie-legend');
-    legend.innerHTML = labels.map((label, i) => `
+    legendEl.innerHTML = labels.map((lbl, i) => `
         <div class="legend-item">
-            <div class="legend-left"><span class="legend-dot" style="background:${palette[i % palette.length]}"></span><span>${label}</span></div>
+            <div class="legend-left">
+                <span class="legend-dot" style="background:${palette.slice().reverse()[i % palette.length]}"></span>
+                <span class="legend-name">${lbl}</span>
+                <span class="legend-pct">${(values[i]/total*100).toFixed(1)}%</span>
+            </div>
             <span class="legend-val">S/ ${values[i].toFixed(2)}</span>
         </div>`).join('');
 }
 
-function setDefaultDates() {
-    const now = new Date();
-    document.getElementById('filter-year').value = now.getFullYear();
-    document.getElementById('filter-month').value = String(now.getMonth() + 1).padStart(2, '0');
+// ─────────────────────────────────────────────────────────────
+// 14. DONA — Método de Pago (NUEVO)
+// ─────────────────────────────────────────────────────────────
+function renderMethodChart(expenses) {
+    if (methodChart) methodChart.destroy();
+
+    const methodLabel = { Cash: 'Efectivo', Debit: 'Débito', Credit: 'Crédito' };
+    const methodColors = { Cash: '#7a8c70', Debit: '#5e7a8c', Credit: '#c9a84c' };
+    const map = {};
+    expenses.forEach(e => {
+        const k = e.payment_method || 'Otro';
+        map[k]  = (map[k] || 0) + parseFloat(e.amount_exp);
+    });
+
+    const labels     = Object.keys(map);
+    const values     = Object.values(map);
+    const colors     = labels.map(l => methodColors[l] || '#8c6b5e');
+    const total      = values.reduce((s, v) => s + v, 0);
+    const legendEl   = document.getElementById('method-legend');
+
+    if (labels.length === 0) {
+        legendEl.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;text-align:center;padding:1rem;">Sin gastos</div>';
+        return;
+    }
+
+    methodChart = new Chart(document.getElementById('methodChart'), {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(l => methodLabel[l] || l),
+            datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: {
+            cutout: '68%',
+            plugins: { legend: { display: false }, tooltip: {
+                callbacks: { label: ctx => ` S/ ${parseFloat(ctx.raw).toFixed(2)} (${(ctx.raw/total*100).toFixed(1)}%)` }
+            }}
+        }
+    });
+
+    legendEl.innerHTML = labels.map((lbl, i) => `
+        <div class="legend-item">
+            <div class="legend-left">
+                <span class="legend-dot" style="background:${colors[i]}"></span>
+                <span class="legend-name">${methodLabel[lbl] || lbl}</span>
+                <span class="legend-pct">${(values[i]/total*100).toFixed(1)}%</span>
+            </div>
+            <span class="legend-val">S/ ${values[i].toFixed(2)}</span>
+        </div>`).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// 15. CUOTAS PENDIENTES
+// ─────────────────────────────────────────────────────────────
+function renderInstallments(list, totalCuotas) {
+    const container = document.getElementById('installments-container');
+    document.getElementById('quot-total-label').innerText = `S/ ${totalCuotas.toFixed(2)} total`;
+
+    if (list.length === 0) {
+        container.innerHTML = '<div class="trend-empty">Sin cuotas en este periodo</div>';
+        return;
+    }
+
+    container.innerHTML = list.map(e => {
+        const totalQ = parseInt(e.installments);
+        const cuota  = e.installment_amt != null
+            ? parseFloat(e.installment_amt)
+            : parseFloat(e.amount_exp) / totalQ;
+        return `
+        <div class="installment-row">
+            <div>
+                <div class="inst-name">${e.description_exp}</div>
+                <div class="inst-sub">
+                    ${e.cards?.name_card || 'Tarjeta'} · ${totalQ} cuotas
+                    · Total S/ ${parseFloat(e.amount_exp).toFixed(2)}
+                </div>
+            </div>
+            <div class="inst-amt">S/ ${cuota.toFixed(2)}<span style="font-weight:400;font-size:0.6rem;color:var(--muted);">/c</span></div>
+        </div>`;
+    }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// 16. PRESUPUESTO VS REAL (NUEVO)
+// ─────────────────────────────────────────────────────────────
+function renderBudgetBars(budgets, expenses, filters) {
+    const container = document.getElementById('budget-bars-container');
+    const labelEl   = document.getElementById('budget-period-label');
+
+    if (!filters.month || !filters.year || budgets.length === 0) {
+        container.innerHTML = '<div class="trend-empty">Selecciona un mes para ver el presupuesto</div>';
+        labelEl.innerText = '—';
+        return;
+    }
+
+    const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    labelEl.innerText = `${monthNames[parseInt(filters.month)-1]} ${filters.year}`;
+
+    // Agrupar gastos reales por categoría
+    const realBycat = {};
+    expenses.forEach(e => {
+        const catId = e.id_category;
+        realBycat[catId] = (realBycat[catId] || 0) + parseFloat(e.amount_exp);
+    });
+
+    container.innerHTML = budgets.map(b => {
+        const presup  = parseFloat(b.total_budget);
+        const real    = realBycat[b.id_category] || 0;
+        const pct     = presup > 0 ? Math.min((real / presup) * 100, 100) : 0;
+        const over    = real > presup;
+        const barColor = over ? 'var(--rust)' : pct > 80 ? 'var(--gold)' : 'var(--sage)';
+        const catName  = b.categories?.name_cat || b.name_budget || 'Categoría';
+
+        return `
+        <div class="budget-item">
+            <div class="budget-item-header">
+                <span style="font-weight:500;">${catName}</span>
+                <span style="color:${over ? 'var(--rust)' : 'var(--muted)'};">
+                    S/ ${real.toFixed(2)} / S/ ${presup.toFixed(2)}
+                    ${over ? ' ⚠️' : ''}
+                </span>
+            </div>
+            <div class="budget-bar-track">
+                <div class="budget-bar-fill" style="width:${pct}%; background:${barColor};"></div>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 init();
