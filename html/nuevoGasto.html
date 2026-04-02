@@ -7,59 +7,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/sidebar.css">
+    <link rel="stylesheet" href="../css/nuevoGasto.css">
     <style>
-        :root {
-            --ink: #0f0e0d;
-            --paper: #f5f0e8;
-            --cream: #ede8dc;
-            --cream2: #e6e0d2;
-            --gold: #c9a84c;
-            --gold-light: rgba(201,168,76,0.12);
-            --rust: #c05c3a;
-            --rust-light: rgba(192,92,58,0.1);
-            --muted: #8a8070;
-            --line: rgba(15,14,13,0.1);
-            --sidebar-w: 220px;
-        }
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); display: flex; min-height: 100vh; }
-
-        /* Sidebar styles moved to ../css/sidebar.css */
-
-        /* ─── MAIN ─── */
-        .main { margin-left: var(--sidebar-w); flex: 1; display: flex; justify-content: center; align-items: center; padding: 2rem; }
-
-        .expense-card { background: white; width: 100%; max-width: 500px; border-radius: 20px; border: 1px solid var(--line); box-shadow: var(--shadow); overflow: hidden; animation: fadeUp 0.5s ease both; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .card-head { padding: 2rem; border-bottom: 1px solid var(--line); text-align: center; }
-        .card-head h2 { font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 300; }
-        .card-head h2 span { color: var(--rust); }
-        .card-head p { font-size: 0.85rem; color: var(--muted); margin-top: 0.4rem; }
-
-        .card-body { padding: 2rem; }
-
-        .field { margin-bottom: 1.5rem; }
-        .field label { display: block; font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.6rem; }
-        
-        .input-group { position: relative; display: flex; align-items: center; }
-        .input-group span { position: absolute; left: 1rem; font-family: 'Fraunces', serif; color: var(--muted); }
-        .input-group input { padding-left: 2.2rem !important; font-size: 1.5rem !important; font-family: 'Fraunces', serif !important; color: var(--rust) !important; width: 100%; padding: 0.8rem; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); outline: none; transition: border-color 0.2s; }
-        
-        .field input, .field select, .field textarea { width: 100%; padding: 0.8rem 1rem; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: all 0.2s; }
-        .field input:focus, .field select:focus { border-color: var(--gold); background: white; }
-
-        .btn-save { width: 100%; padding: 1rem; background: var(--ink); color: var(--paper); border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; margin-top: 1rem; }
-        .btn-save:hover { opacity: 0.9; }
-
-        .field-hint { font-size: 0.7rem; color: var(--muted); margin-top: 0.4rem; line-height: 1.4; }
+        /* Inline styles removed and moved to nuevoGasto.css */
     </style>
 </head>
 <body>
 
 <div id="sidebar-root"></div>
-<script src="../js/sidebar-component.js"></script>
+<script type="module" src="../js/sidebar-component.js"></script>
 
 <div class="main">
     <div class="expense-card">

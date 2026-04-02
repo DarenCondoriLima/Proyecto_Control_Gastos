@@ -1,0 +1,117 @@
+/* Variables globales */
+:root {
+    --ink: #0f0e0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --gold: #c9a84c;
+    --gold-light: rgba(201, 168, 76, 0.12);
+    --rust: #c05c3a;
+    --muted: #8a8070;
+    --line: rgba(15, 14, 13, 0.1);
+    --sidebar-w: 220px;
+    --shadow: 0 4px 20px rgba(15, 14, 13, 0.06);
+}
+
+/* Reset y estilos base */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Estilos principales */
+.main {
+    margin-left: var(--sidebar-w);
+    padding: 2rem;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 500px;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.form-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--ink);
+    text-align: center;
+}
+
+.field-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.field label {
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.field input,
+.field select {
+    padding: 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: var(--cream);
+}
+
+.field input:focus,
+.field select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-light);
+}
+
+button {
+    padding: 0.8rem 1.5rem;
+    background: var(--gold);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background: var(--gold-light);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-container {
+        padding: 2rem;
+    }
+
+    .field-group {
+        grid-template-columns: 1fr;
+    }
+}

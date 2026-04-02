@@ -1,3 +1,5 @@
+import { supabase } from './supabase.js';
+
 (function renderSidebar() {
     const root = document.getElementById('sidebar-root');
     if (!root) return;
@@ -10,7 +12,9 @@
         nuevoIngreso: 'nuevoIngreso.html',
         categorias: 'categoriasYSubCategorias.html',
         metodosPago: 'metodosPago.html',
-        deudores: 'deudores.html'
+        deudores: 'deudores.html',
+        presupuestos: 'presupuestos.html',
+        perfil: 'perfil.html'
     };
 
     const isActive = (path) => (currentPage === path ? 'active' : '');
@@ -44,11 +48,13 @@
         <li><a href="${links.nuevoIngreso}" class="${isActive(links.nuevoIngreso)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10h12M10 14l4-4-4-4" stroke-linecap="round" stroke-linejoin="round"/></svg> Nuevo Ingreso</a></li>
     </ul>
 
-    <p class="sb-section-label">Gesti\u00f3n</p>
+    <p class="sb-section-label">Gestión</p>
     <ul class="sb-nav">
-        <li><a href="${links.categorias}" class="${isActive(links.categorias)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h14M3 10h10M3 15h6" stroke-linecap="round"/></svg> Categor\u00edas</a></li>
-        <li><a href="${links.metodosPago}" class="${isActive(links.metodosPago)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16" stroke-linecap="round"/></svg> M\u00e9todos de Pago</a></li>
+        <li><a href="${links.categorias}" class="${isActive(links.categorias)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h14M3 10h10M3 15h6" stroke-linecap="round"/></svg> Categorías</a></li>
+        <li><a href="${links.metodosPago}" class="${isActive(links.metodosPago)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16" stroke-linecap="round"/></svg> Métodos de Pago</a></li>
         <li><a href="${links.deudores}" class="${isActive(links.deudores)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.31 2.69-6 6-6"/><path d="M14 12v5M11.5 14.5l2.5-2.5 2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Deudores</a></li>
+        <li><a href="${links.presupuestos}" class="${isActive(links.presupuestos)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h14v14H3z"/><path d="M3 8h14" stroke-linecap="round"/></svg> Presupuestos</a></li>
+        <li><a href="${links.perfil}" class="${isActive(links.perfil)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="6" r="3"/><path d="M4 17c0-3.31 2.69-6 6-6s6 2.69 6 6"/></svg> Perfil</a></li>
     </ul>
 
     <div class="sb-spacer"></div>
@@ -85,4 +91,25 @@
     navLinks.forEach((link) => {
         link.addEventListener('click', closeSidebar);
     });
+
+    const logoutButton = document.getElementById('btn-logout');
+
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            try {
+                // 1. Llamada a Supabase para cerrar la sesión
+                const { error } = await supabase.auth.signOut();
+                
+                if (error) throw error;
+
+                // 2. Redirección al login tras éxito
+                window.location.href = 'login.html';
+                
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error.message);
+                alert('No se pudo cerrar la sesión correctamente.');
+            }
+        });
+    }
+
 })();

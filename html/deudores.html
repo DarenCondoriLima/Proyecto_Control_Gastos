@@ -7,79 +7,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/sidebar.css">
-    <style>
-        :root {
-            --ink: #0f0e0d; --paper: #f5f0e8; --gold: #c9a84c;
-            --rust: #c05c3a; --muted: #8a8070; --line: rgba(15,14,13,0.1);
-            --sidebar-w: 220px; --shadow: 0 4px 20px rgba(15,14,13,0.06);
-        }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); display: flex; min-height: 100vh; }
-
-        /* Sidebar styles moved to ../css/sidebar.css */
-
-        /* --- AJUSTES EN EL MAIN PARA RESPETAR EL SIDEBAR --- */
-        .main { 
-            margin-left: var(--sidebar-w); /* Empuja el contenido a la derecha */
-            flex: 1; 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            padding: 2.5rem; /* Espaciado interno */
-            position: relative;
-        }
-
-        .header-flex { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 2.5rem; 
-        }
-
-        .header-flex h1 { 
-            font-family: 'Fraunces', serif; 
-            font-size: 2rem; 
-            font-weight: 300; 
-        }
-
-        .header-flex h1 span { 
-            color: var(--rust); 
-        }
-
-        .btn-add { 
-            padding: 0.7rem 1.2rem; 
-            background: var(--ink); 
-            color: white; 
-            border: none; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            display: flex; 
-            gap: 0.5rem; 
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.85rem;
-        }
-
-        /* Grid de Deudores */
-        .debt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
-        .debt-card { background: white; border-radius: 18px; border: 1px solid var(--line); padding: 1.5rem; box-shadow: var(--shadow); position: relative; }
-        .debt-amount { font-family: 'Fraunces', serif; font-size: 1.5rem; color: var(--rust); margin: 0.5rem 0; }
-        .debt-name { font-weight: 500; font-size: 1.1rem; }
-        .debt-date { font-size: 0.75rem; color: var(--muted); }
-
-        /* Modal */
-        .modal { position: fixed; inset: 0; background: rgba(15,14,13,0.5); display: none; align-items: center; justify-content: center; z-index: 200; }
-        .modal.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 400px; padding: 2rem; border-radius: 20px; }
-        .field { margin-bottom: 1.2rem; }
-        .field label { display: block; font-size: 0.7rem; font-weight: 500; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
-        .field input { width: 100%; padding: 0.8rem; border: 1.5px solid var(--line); border-radius: 10px; }
-        .btn-save { width: 100%; padding: 0.9rem; background: var(--ink); color: white; border: none; border-radius: 10px; cursor: pointer; }
-    </style>
+    <link rel="stylesheet" href="../css/deudores.css">
 </head>
 <body>
 
 <div id="sidebar-root"></div>
-<script src="../js/sidebar-component.js"></script>
+<script type="module" src="../js/sidebar-component.js"></script>
 
 <main class="main">
     <div class="header-flex">

@@ -1,0 +1,191 @@
+/* Variables globales */
+:root {
+    --ink: #0f0e0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --gold: #c9a84c;
+    --gold-light: rgba(201, 168, 76, 0.12);
+    --rust: #c05c3a;
+    --muted: #8a8070;
+    --line: rgba(15, 14, 13, 0.1);
+    --sidebar-w: 220px;
+    --shadow: 0 4px 20px rgba(15, 14, 13, 0.06);
+}
+
+/* Reset y estilos base */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Estilos principales */
+.main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    padding: 2.5rem;
+}
+
+.header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2.5rem;
+}
+
+.header-flex h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 300;
+}
+
+.header-flex h1 span {
+    color: var(--gold);
+}
+
+.btn-add {
+    padding: 0.7rem 1.2rem;
+    background: var(--ink);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: opacity 0.2s;
+}
+
+.btn-add:hover {
+    opacity: 0.9;
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.budget-card {
+    background: white;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    position: relative;
+    transition: transform 0.2s;
+    overflow: hidden;
+}
+
+.budget-card:hover {
+    transform: translateY(-4px);
+}
+
+.budget-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.budget-card .card-header h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.2rem;
+    font-weight: 400;
+}
+
+.budget-card .card-header .amount {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gold);
+}
+
+.budget-card .card-body {
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.budget-card .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.budget-card .btn-edit,
+.budget-card .btn-delete {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.budget-card .btn-edit {
+    background: var(--gold);
+    color: white;
+}
+
+.budget-card .btn-delete {
+    background: var(--rust);
+    color: white;
+}
+
+.budget-card .btn-edit:hover {
+    background: var(--gold-light);
+}
+
+.budget-card .btn-delete:hover {
+    background: rgba(192, 92, 58, 0.8);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .main {
+        padding: 2rem;
+    }
+
+    .header-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .btn-add {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-flex h1 {
+        font-size: 1.5rem;
+    }
+
+    .btn-add {
+        font-size: 0.8rem;
+        padding: 0.6rem 1rem;
+    }
+}

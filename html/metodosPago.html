@@ -7,89 +7,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/sidebar.css">
-    <style>
-        :root {
-            --ink: #0f0e0d;
-            --paper: #f5f0e8;
-            --cream: #ede8dc;
-            --cream2: #e6e0d2;
-            --gold: #c9a84c;
-            --gold-light: rgba(201,168,76,0.12);
-            --rust: #c05c3a;
-            --rust-light: rgba(192,92,58,0.1);
-            --muted: #8a8070;
-            --line: rgba(15,14,13,0.1);
-            --sidebar-w: 220px;
-            --shadow: 0 4px 20px rgba(15,14,13,0.06);
-        }
-
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); display: flex; min-height: 100vh; }
-
-        /* Sidebar styles moved to ../css/sidebar.css */
-
-        /* ─── MAIN ─── */
-        .main { margin-left: var(--sidebar-w); flex: 1; padding: 2.5rem; }
-
-        .header-flex { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; }
-        .header-flex h1 { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 300; }
-        .header-flex h1 span { color: var(--gold); }
-
-        .btn-add { 
-            padding: 0.7rem 1.2rem; background: var(--ink); color: white; 
-            border: none; border-radius: 10px; font-size: 0.85rem; cursor: pointer;
-            display: flex; align-items: center; gap: 0.5rem; transition: opacity 0.2s;
-        }
-        .btn-add:hover { opacity: 0.9; }
-
-        /* Tarjetas Estilo "Wallet" */
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
-        
-        .bank-card {
-            background: white; border-radius: 18px; border: 1px solid var(--line);
-            padding: 1.5rem; box-shadow: var(--shadow); position: relative;
-            transition: transform 0.2s; overflow: hidden;
-        }
-        .bank-card:hover { transform: translateY(-4px); }
-        .bank-card::before { 
-            content: ''; position: absolute; top: -20px; right: -20px; 
-            width: 100px; height: 100px; background: var(--gold-light); 
-            border-radius: 50%; opacity: 0.5; 
-        }
-
-        .card-type { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.5rem; }
-        .card-name { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 400; margin-bottom: 1.5rem; }
-        
-        .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--line); pt: 1rem; margin-top: 1rem; padding-top: 1rem; }
-        .card-actions { display: flex; gap: 10px; }
-
-        .icon-btn { 
-            background: none; border: none; cursor: pointer; color: var(--muted); 
-            transition: color 0.2s; display: flex; align-items: center;
-        }
-        .icon-btn:hover { color: var(--ink); }
-        .icon-btn.danger:hover { color: var(--rust); }
-
-        /* MODAL */
-        .modal { 
-            position: fixed; inset: 0; background: rgba(15,14,13,0.5); 
-            backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 200;
-        }
-        .modal.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 400px; padding: 2rem; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .modal-content h3 { font-family: 'Fraunces', serif; font-size: 1.4rem; margin-bottom: 1.5rem; }
-
-        .field { margin-bottom: 1.2rem; }
-        .field label { display: block; font-size: 0.7rem; font-weight: 500; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
-        .field input, .field select { width: 100%; padding: 0.8rem; border: 1.5px solid var(--line); border-radius: 10px; background: var(--paper); outline: none; }
-        
-        .btn-save { width: 100%; padding: 0.9rem; background: var(--ink); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 500; margin-top: 1rem; }
-    </style>
+    <link rel="stylesheet" href="../css/metodosPago.css">
 </head>
 <body>
 
 <div id="sidebar-root"></div>
-<script src="../js/sidebar-component.js"></script>
+<script type="module" src="../js/sidebar-component.js"></script>
 
 <main class="main">
     <div class="header-flex">
