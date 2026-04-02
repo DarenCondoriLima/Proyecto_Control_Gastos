@@ -151,6 +151,26 @@ body {
     background: rgba(192, 92, 58, 0.8);
 }
 
+.budget-card.monthly-summary {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid var(--line);
+}
+
+.budget-card.monthly-summary:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow);
+}
+
+.btn-detail {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    transition: opacity 0.2s;
+}
+
+.btn-detail:hover {
+    opacity: 0.9;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .cards-grid {

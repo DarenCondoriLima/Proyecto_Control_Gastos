@@ -1,22 +1,29 @@
-/* Variables globales */
-:root {
-    --ink: #0f0e0d;
-    --paper: #f5f0e8;
-    --cream: #ede8dc;
-    --gold: #c9a84c;
-    --gold-light: rgba(201, 168, 76, 0.12);
-    --rust: #c05c3a;
-    --muted: #8a8070;
-    --line: rgba(15, 14, 13, 0.1);
-    --sidebar-w: 220px;
-    --shadow: 0 4px 20px rgba(15, 14, 13, 0.06);
-}
-
-/* Reset y estilos base */
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+}
+
+:root {
+    --ink: #0f0e0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --cream2: #e6e0d2;
+    --gold: #c9a84c;
+    --gold-light: rgba(201, 168, 76, 0.12);
+    --sage: #7a8c70;
+    --sage-light: rgba(122, 140, 112, 0.12);
+    --rust: #c05c3a;
+    --rust-light: rgba(192, 92, 58, 0.1);
+    --muted: #8a8070;
+    --line: rgba(15, 14, 13, 0.1);
+    --sidebar-w: 220px;
+    --shadow: 0 2px 16px rgba(15, 14, 13, 0.07);
+}
+
+html,
+body {
+    height: 100%;
 }
 
 body {
@@ -24,22 +31,22 @@ body {
     background: var(--paper);
     color: var(--ink);
     display: flex;
-    min-height: 100vh;
 }
 
-/* Estilos principales */
 .main {
-    margin-left: var(--sidebar-w);
+    margin-left: var(--sidebar-w, 220px);
     padding: 2rem;
     min-height: 100vh;
+    min-width: 98vw;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: flex-start;
+    background: var(--cream);
 }
 
 .form-container {
     width: 100%;
-    max-width: 500px;
+    max-width: 900px;
     background: white;
     padding: 2.5rem;
     border-radius: 20px;
@@ -49,51 +56,25 @@ body {
 
 .form-title {
     font-family: 'Fraunces', serif;
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     margin-bottom: 1.5rem;
     color: var(--ink);
     text-align: center;
 }
 
-.field-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1rem;
+.income-badge {
+    background: var(--gold-light);
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+    border: 1px dashed var(--gold);
+    font-size: 1rem;
+    font-weight: 500;
 }
 
-.field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.field label {
-    font-size: 0.9rem;
-    color: var(--muted);
-}
-
-.field input,
-.field select {
-    padding: 0.8rem;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    font-size: 0.9rem;
-    color: var(--ink);
-    background: var(--cream);
-}
-
-.field input:focus,
-.field select:focus {
-    outline: none;
-    border-color: var(--gold);
-    box-shadow: 0 0 0 2px var(--gold-light);
-}
-
-button {
+/* Botones */
+.btn-submit {
     padding: 0.8rem 1.5rem;
-    background: var(--gold);
-    color: white;
     border: none;
     border-radius: 10px;
     font-size: 1rem;
@@ -101,17 +82,121 @@ button {
     transition: background-color 0.2s;
 }
 
-button:hover {
+.btn-primary-submit {
+    background: var(--gold);
+    color: white;
+}
+
+.btn-primary-submit:hover {
     background: var(--gold-light);
 }
 
-/* Responsive */
+/* Estilos para las filas dinámicas de presupuesto */
+
+.budget-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.budget-row .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.budget-row .field label {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.budget-row .field input,
+.budget-row .field select {
+    padding: 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: var(--cream);
+}
+
+.budget-row .field input:focus,
+.budget-row .field select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-light);
+}
+
+.btn-remove {
+    background: var(--rust);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.btn-remove:hover {
+    background: rgba(192, 92, 58, 0.8);
+}
+
+.period-selector {
+    background: var(--paper);
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+}
+
+.select-period, .input-period {
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: white;
+}
+
+.btn-load {
+    background: var(--gold);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0 1.5rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Responsividad */
 @media (max-width: 768px) {
+    .main {
+        margin-left: 0;
+        padding: 1.5rem;
+    }
+
     .form-container {
         padding: 2rem;
     }
 
-    .field-group {
+    .btn-submit {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .budget-row {
         grid-template-columns: 1fr;
+    }
+
+    .btn-remove {
+        width: 100%;
+        justify-content: center;
     }
 }

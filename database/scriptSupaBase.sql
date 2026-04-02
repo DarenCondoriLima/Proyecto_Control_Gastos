@@ -201,3 +201,18 @@ ALTER TABLE public.incomes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own incomes" 
 ON public.incomes FOR ALL 
 USING (auth.uid() = id_user);
+
+-- 1. Tabla para registrar el ingreso total del mes
+CREATE TABLE IF NOT EXISTS monthly_incomes (
+    id_income UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_user UUID REFERENCES auth.users(id) NOT NULL,
+    month_income SMALLINT NOT NULL,
+    year_income SMALLINT NOT NULL,
+    amount_income DECIMAL(15,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(id_user, month_income, year_income) -- Un solo ingreso por mes
+);
+
+-- 2. Modificamos o aseguramos que budgets tenga id_category
+-- Si ya creaste la tabla, asegúrate de que tenga esta columna:
+ALTER TABLE budgets ADD COLUMN IF NOT EXISTS id_category UUID REFERENCES categories(id_cat);
