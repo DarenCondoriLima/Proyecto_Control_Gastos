@@ -200,3 +200,10 @@ body {
         justify-content: center;
     }
 }
+
+/* Ajuste para period-selector en móviles */
+@media (max-width: 768px) {
+    .period-selector {
+        flex-direction: column;
+    }
+}
