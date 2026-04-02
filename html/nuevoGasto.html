@@ -8,9 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/sidebar.css">
     <link rel="stylesheet" href="../css/nuevoGasto.css">
-    <style>
-        /* Inline styles removed and moved to nuevoGasto.css */
-    </style>
 </head>
 <body>
 
@@ -25,6 +22,8 @@
         </div>
         <div class="card-body">
             <form id="expense-form">
+
+                <!-- Monto -->
                 <div class="field">
                     <label>Monto del gasto</label>
                     <div class="input-group">
@@ -33,6 +32,7 @@
                     </div>
                 </div>
 
+                <!-- Fecha + Método -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="field">
                         <label>Fecha</label>
@@ -48,32 +48,39 @@
                     </div>
                 </div>
 
+                <!-- Tarjeta (visible para Débito y Crédito) -->
                 <div id="card-field" class="field" style="display: none;">
                     <label>Seleccionar Tarjeta</label>
                     <select id="exp-card">
                         <option value="">Selecciona tarjeta...</option>
                     </select>
-                    <span id="card-error" style="display:none; color: var(--rust); font-size: 0.7rem; margin-top: 0.3rem;">
+                    <span id="card-error" style="display:none; color:var(--rust); font-size:0.7rem; margin-top:0.3rem;">
                         * Debes elegir una tarjeta para pagos electrónicos.
                     </span>
                 </div>
 
+                <!-- Cuotas (visible solo para Crédito) -->
                 <div id="installments-field" class="field" style="display: none; background: var(--gold-light); padding: 1.5rem; border-radius: 15px;">
                     <label>Número de Cuotas</label>
                     <input type="number" id="exp-installments" value="1" min="1" max="72" step="1">
 
+                    <!-- Preview de cuota calculada en tiempo real -->
+                    <span id="installment-preview" style="display:none; font-size:0.75rem; color:var(--gold); margin-top:0.4rem; font-weight:500;"></span>
+
                     <div style="display: flex; align-items: center; gap: 10px; margin-top: 1rem;">
                         <input type="checkbox" id="is-interest-free" checked style="width: auto;">
-                        <label style="margin-bottom: 0; text-transform: none; font-size: 0.8rem;">¿Es sin intereses?</label>
+                        <label style="margin-bottom: 0; text-transform: none; font-size: 0.8rem;">¿Es sin intereses? (cuota = total ÷ cuotas)</label>
                     </div>
 
+                    <!-- Monto manual (visible si hay intereses) -->
                     <div id="manual-installment-field" class="field" style="display: none; margin-top: 1rem;">
                         <label>Monto de cada cuota (S/)</label>
                         <input type="text" id="exp-inst-amount" placeholder="0.00" inputmode="decimal">
-                        <p class="field-hint">Ingresa el monto exacto que figura en tu banco.</p>
+                        <p class="field-hint">Ingresa el monto exacto que figura en tu estado de cuenta.</p>
                     </div>
                 </div>
 
+                <!-- Categoría -->
                 <div class="field">
                     <label>Categoría</label>
                     <select id="exp-cat" required>
@@ -81,6 +88,7 @@
                     </select>
                 </div>
 
+                <!-- Subcategoría -->
                 <div class="field">
                     <label>Subcategoría</label>
                     <select id="exp-subcat" required disabled>
@@ -88,6 +96,7 @@
                     </select>
                 </div>
 
+                <!-- Descripción -->
                 <div class="field">
                     <label>Descripción</label>
                     <textarea id="exp-desc" rows="2" placeholder="Opcional..."></textarea>

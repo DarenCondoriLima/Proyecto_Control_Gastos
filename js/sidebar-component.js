@@ -12,6 +12,7 @@ import { supabase } from './supabase.js';
         nuevoIngreso: 'nuevoIngreso.html',
         categorias: 'categoriasYSubCategorias.html',
         metodosPago: 'metodosPago.html',
+        gestionTarjetas: 'gestionTarjetas.html',
         deudores: 'deudores.html',
         presupuestos: 'presupuestos.html',
         perfil: 'perfil.html'
@@ -52,6 +53,7 @@ import { supabase } from './supabase.js';
     <ul class="sb-nav">
         <li><a href="${links.categorias}" class="${isActive(links.categorias)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 5h14M3 10h10M3 15h6" stroke-linecap="round"/></svg> Categorías</a></li>
         <li><a href="${links.metodosPago}" class="${isActive(links.metodosPago)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16" stroke-linecap="round"/></svg> Métodos de Pago</a></li>
+        <li><a href="${links.gestionTarjetas}" class="${isActive(links.gestionTarjetas)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="16" height="12" rx="2"/><path d="M2 9h16" stroke-linecap="round"/><path d="M6 14h4" stroke-linecap="round"/></svg> Gestión Tarjetas</a></li>
         <li><a href="${links.deudores}" class="${isActive(links.deudores)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3.31 2.69-6 6-6"/><path d="M14 12v5M11.5 14.5l2.5-2.5 2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Deudores</a></li>
         <li><a href="${links.presupuestos}" class="${isActive(links.presupuestos)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h14v14H3z"/><path d="M3 8h14" stroke-linecap="round"/></svg> Presupuestos</a></li>
         <li><a href="${links.perfil}" class="${isActive(links.perfil)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="6" r="3"/><path d="M4 17c0-3.31 2.69-6 6-6s6 2.69 6 6"/></svg> Perfil</a></li>

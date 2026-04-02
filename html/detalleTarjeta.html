@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Tarjeta — ControlGastos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <link rel="stylesheet" href="../css/detalleTarjeta.css">
+</head>
+<body>
+
+<div id="sidebar-root"></div>
+<script type="module" src="../js/sidebar-component.js"></script>
+
+<main class="main">
+
+    <!-- Header -->
+    <div class="header-flex">
+        <h1 id="card-name-title">Cargando <span>Tarjeta...</span></h1>
+        <button onclick="history.back()" class="btn-add" style="background: var(--muted);">
+            ← Volver
+        </button>
+    </div>
+
+    <!-- Tarjeta visual hero -->
+    <div class="card-hero" id="card-hero">
+        <div class="card-hero-top">
+            <div>
+                <div id="hero-card-name" class="card-hero-name">—</div>
+                <div style="font-size: 0.75rem; color: rgba(245,240,232,0.45); margin-top: 0.25rem;" id="hero-card-currency">PEN</div>
+            </div>
+            <span id="hero-card-type" class="card-hero-type">Crédito</span>
+        </div>
+
+        <div class="card-hero-bottom">
+            <!-- Gasto del mes -->
+            <div class="card-stat">
+                <span class="card-stat-label">Gasto este mes</span>
+                <span class="card-stat-value gold" id="hero-month-total">S/ —</span>
+                <span class="card-stat-sub" id="hero-month-count">— transacciones</span>
+            </div>
+
+            <!-- Cuotas pendientes (solo crédito) -->
+            <div class="card-stat" id="hero-installments-wrap" style="display:none;">
+                <span class="card-stat-label">Cuotas en curso</span>
+                <span class="card-stat-value" id="hero-installments-count">—</span>
+                <span class="card-stat-sub" id="hero-installments-total">Total: S/ —</span>
+            </div>
+
+            <!-- Límite / Disponible (solo crédito) -->
+            <div class="card-stat" id="hero-limit-wrap" style="display:none;">
+                <span class="card-stat-label">Disponible</span>
+                <span class="card-stat-value" id="hero-available">S/ —</span>
+                <div class="credit-bar-wrap" style="margin-top: 0.4rem;">
+                    <div class="credit-bar-fill" id="hero-credit-bar" style="width: 0%;"></div>
+                </div>
+                <span class="card-stat-sub" id="hero-limit-text">Límite: S/ —</span>
+            </div>
+
+            <!-- Fecha de corte -->
+            <div class="card-stat" id="hero-cutoff-wrap" style="display:none;">
+                <span class="card-stat-label">Corte / Pago</span>
+                <span class="card-stat-value" id="hero-cutoff-days">—</span>
+                <span class="card-stat-sub" id="hero-cutoff-text">— / —</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats rápidos -->
+    <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+            <span class="stat-card-label">Total gastado</span>
+            <span class="stat-card-value rust" id="stat-total">S/ 0.00</span>
+            <span class="stat-card-sub" id="stat-period">Todos los registros</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-card-label">N° de gastos</span>
+            <span class="stat-card-value" id="stat-count">0</span>
+            <span class="stat-card-sub">Transacciones</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-card-label">Promedio por gasto</span>
+            <span class="stat-card-value gold" id="stat-avg">S/ 0.00</span>
+            <span class="stat-card-sub">Ticket promedio</span>
+        </div>
+        <div class="stat-card" id="stat-installments-card">
+            <span class="stat-card-label">Compras en cuotas</span>
+            <span class="stat-card-value green" id="stat-installments">0</span>
+            <span class="stat-card-sub" id="stat-installments-sub">S/ 0.00 en cuotas</span>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-bar">
+        <div class="filter-group">
+            <label>Período</label>
+            <input type="month" id="filter-month" />
+        </div>
+        <div class="filter-group">
+            <label>Categoría</label>
+            <select id="filter-category">
+                <option value="">Todas las categorías</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>Tipo</label>
+            <select id="filter-type">
+                <option value="">Todos</option>
+                <option value="installment">Con cuotas</option>
+                <option value="direct">Pago directo</option>
+            </select>
+        </div>
+        <button class="btn-clear-filter" id="btn-clear-filter">✕ Limpiar filtros</button>
+    </div>
+
+    <!-- Tabla de gastos -->
+    <div class="expenses-section">
+        <div class="expenses-section-header">
+            <h2>Movimientos</h2>
+            <span class="expenses-count" id="expenses-count-label">0 registros</span>
+        </div>
+
+        <table class="expenses-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Cuotas</th>
+                    <th>Monto</th>
+                </tr>
+            </thead>
+            <tbody id="expenses-list">
+                <!-- Se rellena con JS -->
+            </tbody>
+        </table>
+    </div>
+
+</main>
+
+<script type="module" src="../js/main.js"></script>
+<script type="module" src="../js/detalleTarjeta.js"></script>
+</body>
+</html>
