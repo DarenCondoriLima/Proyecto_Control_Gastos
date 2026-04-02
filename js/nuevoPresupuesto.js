@@ -1,9 +1,10 @@
 import { supabase } from './supabase.js';
 
-let categories = [];
-let rowCounter = 0;
-let ingresosMes = 0;
-let gastosMes   = 0;   // Suma de total_budget del periodo, leída desde la DB
+let categories    = [];
+let subCategories = [];   // Todas las subcategorías del usuario, filtradas en el front por id_category
+let rowCounter    = 0;
+let ingresosMes   = 0;
+let gastosMes     = 0;
 
 async function init() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -13,14 +14,28 @@ async function init() {
     document.getElementById('filter-month').value = urlParams.get('m') || (new Date().getMonth() + 1);
     document.getElementById('filter-year').value  = urlParams.get('y') || new Date().getFullYear();
 
+    // ── Cargar Categorías ────────────────────────────────────────
     const { data: catData, error: catError } = await supabase
         .from('categories')
         .select('id_cat, name_cat')
         .eq('id_user', user.id)
+        .eq('type_cat', 'gasto')
         .eq('deleted_cat', false);
 
     if (catError) console.error('[categories] Error:', catError.message);
     categories = catData || [];
+
+    // ── Cargar Subcategorías (todas de una vez) ──────────────────
+    // Las filtramos en el front cuando el usuario cambia de categoría,
+    // así evitamos una query por cada fila del formulario.
+    const { data: subData, error: subError } = await supabase
+        .from('subcategories')
+        .select('id_subcat, id_category, name_subcat')
+        .eq('id_user', user.id)
+        .eq('deleted_subcat', false);
+
+    if (subError) console.error('[subcategories] Error:', subError.message);
+    subCategories = subData || [];
 
     document.getElementById('btn-add-row').onclick     = () => addBudgetRow();
     document.getElementById('btn-load-period').onclick = () => loadPeriodData(user.id);
@@ -37,7 +52,7 @@ async function loadPeriodData(userId) {
     container.innerHTML = '';
     rowCounter = 0;
 
-    // ─── 1. INGRESOS DEL MES (tabla: incomes) ───────────────────
+    // ── 1. Ingresos del mes ──────────────────────────────────────
     const lastDay   = new Date(year, month, 0).getDate();
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const endDate   = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
@@ -54,13 +69,9 @@ async function loadPeriodData(userId) {
     const filteredIncomes = incData?.filter(i =>
         i.payment_method === 'Cash' || i.payment_method === 'Debit'
     ) || [];
-
     ingresosMes = filteredIncomes.reduce((acc, curr) => acc + parseFloat(curr.amount_inc), 0);
-    console.log('[incomes] ingresosMes:', ingresosMes);
 
-    // ─── 2. GASTOS PLANIFICADOS DEL MES (tabla: budgets) ────────
-    //    gastosMes = suma de total_budget para el mes/año seleccionado
-    //    Este valor alimenta "Ingreso Restante (Disponible)"
+    // ── 2. Presupuestos del mes ──────────────────────────────────
     const { data: budData, error: budError } = await supabase
         .from('budgets')
         .select('*')
@@ -71,12 +82,9 @@ async function loadPeriodData(userId) {
     if (budError) console.error('[budgets] Error:', budError.message);
 
     gastosMes = budData?.reduce((acc, curr) => acc + parseFloat(curr.total_budget), 0) ?? 0;
-    console.log('[budgets] gastosMes:', gastosMes);
 
-    // Mostrar disponible con valores reales de la DB antes de renderizar el form
     updateTotals();
 
-    // Renderizar filas del formulario
     if (budData && budData.length > 0) {
         budData.forEach(b => addBudgetRow(b));
     } else {
@@ -84,40 +92,51 @@ async function loadPeriodData(userId) {
     }
 }
 
-function updateTotals() {
-    // monthly-income → ingresosMes (suma de incomes del periodo)
-    const incomeEl = document.getElementById('monthly-income');
-    if (incomeEl) incomeEl.innerText = `S/ ${ingresosMes.toFixed(2)}`;
+// Devuelve el HTML de las <option> de subcategoría para una categoría dada.
+// Si selectedId está definido, marca esa opción como seleccionada.
+function buildSubcatOptions(idCategory, selectedId = null) {
+    const subs = subCategories.filter(s => s.id_category === idCategory);
+    if (subs.length === 0) return '<option value="">— Sin subcategorías —</option>';
+    return `<option value="">Seleccionar...</option>` +
+        subs.map(s =>
+            `<option value="${s.id_subcat}" ${selectedId === s.id_subcat ? 'selected' : ''}>${s.name_subcat}</option>`
+        ).join('');
+}
 
-    // available-amount → ingresosMes − gastosMes (suma de budgets del periodo en DB)
-    // Además se recalcula en tiempo real sumando las filas actuales del formulario,
-    // para que el número responda al instante cuando el usuario edita o añade filas.
-    const rows = document.querySelectorAll('.row-amount');
-    const totalFormulario = Array.from(rows).reduce((acc, input) => acc + (parseFloat(input.value) || 0), 0);
-
-    // Si hay filas en el formulario (usuario editando), usamos su suma en vivo.
-    // Si no hay filas aún (primera carga), usamos gastosMes de la DB.
-    const totalGastos = rows.length > 0 ? totalFormulario : gastosMes;
-    const disponible  = ingresosMes - totalGastos;
-
-    const display = document.getElementById('available-amount');
-    if (display) {
-        display.innerText   = `S/ ${disponible.toFixed(2)}`;
-        display.style.color = disponible < 0 ? 'var(--rust)' : 'var(--sage)';
-    }
+// Llamada desde el oninput del <select> de categoría para refrescar el select de subcategoría
+function onCategoryChange(selectEl) {
+    const row     = selectEl.closest('.budget-row');
+    const subSel  = row.querySelector('.row-subcat');
+    const catId   = selectEl.value;
+    subSel.innerHTML = catId
+        ? buildSubcatOptions(catId)
+        : '<option value="">Primero elige categoría</option>';
 }
 
 function addBudgetRow(data = null) {
     const container = document.getElementById('budget-rows-container');
-    const rowId = `row-${rowCounter++}`;
+    const rowId     = `row-${rowCounter++}`;
+
+    // Opciones de subcategoría precargadas si viene con datos guardados
+    const subcatHtml = data?.id_category
+        ? buildSubcatOptions(data.id_category, data.id_subcat ?? null)
+        : '<option value="">Primero elige categoría</option>';
 
     const rowHtml = `
         <div class="budget-row" id="${rowId}">
             <div class="field">
                 <label>Categoría</label>
-                <select class="row-cat" required>
+                <select class="row-cat" required onchange="onCategoryChange(this)">
                     <option value="">Seleccionar...</option>
-                    ${categories.map(c => `<option value="${c.id_cat}" ${data?.id_category === c.id_cat ? 'selected' : ''}>${c.name_cat}</option>`).join('')}
+                    ${categories.map(c =>
+                        `<option value="${c.id_cat}" ${data?.id_category === c.id_cat ? 'selected' : ''}>${c.name_cat}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            <div class="field">
+                <label>Subcategoría</label>
+                <select class="row-subcat">
+                    ${subcatHtml}
                 </select>
             </div>
             <div class="field">
@@ -133,6 +152,22 @@ function addBudgetRow(data = null) {
             </button>
         </div>`;
     container.insertAdjacentHTML('beforeend', rowHtml);
+}
+
+function updateTotals() {
+    const incomeEl = document.getElementById('monthly-income');
+    if (incomeEl) incomeEl.innerText = `S/ ${ingresosMes.toFixed(2)}`;
+
+    const rows = document.querySelectorAll('.row-amount');
+    const totalFormulario = Array.from(rows).reduce((acc, input) => acc + (parseFloat(input.value) || 0), 0);
+    const totalGastos = rows.length > 0 ? totalFormulario : gastosMes;
+    const disponible  = ingresosMes - totalGastos;
+
+    const display = document.getElementById('available-amount');
+    if (display) {
+        display.innerText   = `S/ ${disponible.toFixed(2)}`;
+        display.style.color = disponible < 0 ? 'var(--rust)' : 'var(--sage)';
+    }
 }
 
 async function saveAllBudgets(userId) {
@@ -152,14 +187,16 @@ async function saveAllBudgets(userId) {
     const dataToInsert = [];
 
     rows.forEach(row => {
-        const cat  = row.querySelector('.row-cat').value;
-        const amt  = parseFloat(row.querySelector('.row-amount').value);
-        const name = row.querySelector('.row-name').value;
+        const cat    = row.querySelector('.row-cat').value;
+        const subcat = row.querySelector('.row-subcat').value || null;   // puede ser vacío
+        const amt    = parseFloat(row.querySelector('.row-amount').value);
+        const name   = row.querySelector('.row-name').value;
 
         if (cat && amt > 0) {
             dataToInsert.push({
                 id_user:         userId,
                 id_category:     cat,
+                id_subcat:       subcat,          // columna añadida vía ALTER TABLE
                 name_budget:     name || 'Plan',
                 month_budget:    month,
                 year_budget:     year,
@@ -177,9 +214,11 @@ async function saveAllBudgets(userId) {
         alert('Planificación guardada.');
         window.location.href = 'presupuestos.html';
     } else {
+        console.error('[budgets] Error al insertar:', insError.message);
         alert('Error: ' + insError.message);
     }
 }
 
-window.updateTotals = updateTotals;
+window.updateTotals      = updateTotals;
+window.onCategoryChange  = onCategoryChange;
 init();

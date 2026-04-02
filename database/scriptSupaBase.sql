@@ -216,3 +216,7 @@ CREATE TABLE IF NOT EXISTS monthly_incomes (
 -- 2. Modificamos o aseguramos que budgets tenga id_category
 -- Si ya creaste la tabla, asegúrate de que tenga esta columna:
 ALTER TABLE budgets ADD COLUMN IF NOT EXISTS id_category UUID REFERENCES categories(id_cat);
+
+
+-- Ejecuta esto en tu SQL Editor de Supabase si no existe la columna
+ALTER TABLE Budgets ADD COLUMN IF NOT EXISTS id_subcat UUID REFERENCES SubCategories(ID_SUBCAT);
