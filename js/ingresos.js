@@ -55,9 +55,11 @@ async function init() {
 
     // 4. Cargar Cuentas/Tarjetas
     const { data: cards } = await supabase
-        .from('cards')
-        .select('id_card, name_card')
-        .eq('id_user', user.id);
+    .from('cards')
+    .select('id_card, name_card')
+    .eq('id_user', user.id)
+    .in('type_card', ['Debit', 'Cash']);
+
         
     const cardSelect = document.getElementById('inc-card');
     cardSelect.innerHTML = '<option value="">Selecciona destino...</option>';

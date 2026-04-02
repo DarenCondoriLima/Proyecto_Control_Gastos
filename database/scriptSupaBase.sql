@@ -52,6 +52,7 @@ CREATE TABLE Cards(
     UPDATED_AT   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+
 -- =============================================
 -- 3. CATEGORIES: Grupos principales de gastos.
 -- =============================================
@@ -220,3 +221,13 @@ ALTER TABLE budgets ADD COLUMN IF NOT EXISTS id_category UUID REFERENCES categor
 
 -- Ejecuta esto en tu SQL Editor de Supabase si no existe la columna
 ALTER TABLE Budgets ADD COLUMN IF NOT EXISTS id_subcat UUID REFERENCES SubCategories(ID_SUBCAT);
+
+CREATE TABLE public.credit_card_payments (
+    id_payment uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    id_user uuid REFERENCES auth.users(id),
+    id_card uuid REFERENCES public.cards(id_card),
+    amount_paid NUMERIC(15,2) NOT NULL,
+    date_payment DATE DEFAULT CURRENT_DATE,
+    source_account uuid REFERENCES public.cards(id_card), -- De dónde salió el dinero (Débito)
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
