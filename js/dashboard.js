@@ -1,10 +1,16 @@
 import { supabase } from './supabase.js';
 
 // ─────────────────────────────────────────────────────────────
-// ESTADO DE GRÁFICOS
+// ESTADO GLOBAL
 // ─────────────────────────────────────────────────────────────
 let pieChart, subPieChart, barChart, methodChart;
 const palette = ['#c9a84c','#7a8c70','#c05c3a','#5e7a8c','#8c6b5e','#a8a87a','#6b8c8c','#8c7a5e','#5e6b8c','#8c5e7a'];
+
+// Cache para el drawer de edición
+let _currentUserId   = null;
+let _allCats         = [];   // { id_cat, name_cat }
+let _allCards        = [];   // { id_card, name_card, type_card }
+let _reloadCallback  = null; // función para recargar el dashboard tras guardar/eliminar
 
 // ─────────────────────────────────────────────────────────────
 // 1. INICIALIZACIÓN
@@ -23,7 +29,11 @@ async function init() {
         if (initEl) initEl.innerText = profile.firstname_user.charAt(0).toUpperCase();
     }
 
+    _currentUserId  = user.id;
+    _reloadCallback = () => loadDashboardData(user.id);
+
     await Promise.all([loadCategories(user.id), loadCards(user.id)]);
+    initDrawer();
 
     // Listeners de filtros
     document.getElementById('filter-cat').addEventListener('change', e => loadSubcategories(e.target.value, user.id));
@@ -63,9 +73,11 @@ async function init() {
 // ─────────────────────────────────────────────────────────────
 async function loadCategories(userId) {
     const { data } = await supabase.from('categories')
-        .select('id_cat, name_cat').eq('id_user', userId).eq('deleted_cat', false);
+        .select('id_cat, name_cat').eq('id_user', userId).eq('deleted_cat', false)
+        .order('name_cat', { ascending: true });
+    _allCats = data || [];
     const sel = document.getElementById('filter-cat');
-    data?.forEach(c => sel.add(new Option(c.name_cat, c.id_cat)));
+    _allCats.forEach(c => sel.add(new Option(c.name_cat, c.id_cat)));
 }
 
 async function loadSubcategories(catId, userId) {
@@ -81,9 +93,12 @@ async function loadSubcategories(catId, userId) {
 
 async function loadCards(userId) {
     const { data } = await supabase.from('cards')
-        .select('id_card, name_card').eq('id_user', userId).eq('deleted_card', false);
+        .select('id_card, name_card, type_card')
+        .eq('id_user', userId).eq('deleted_card', false)
+        .order('name_card', { ascending: true });
+    _allCards = data || [];
     const sel = document.getElementById('filter-card');
-    data?.forEach(c => sel.add(new Option(c.name_card, c.id_card)));
+    _allCards.forEach(c => sel.add(new Option(c.name_card, c.id_card)));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -292,6 +307,7 @@ function renderTable(expenses, incomes) {
 
     const rows = [
         ...expenses.map(e => ({
+            id:     e.id_exp,
             date:   e.date_exp,
             type:   'expense',
             cat:    e.categories?.name_cat    || 'Sin categoría',
@@ -301,9 +317,11 @@ function renderTable(expenses, incomes) {
             method: e.payment_method,
             cuotas: parseInt(e.installments) > 1
                 ? `${e.installments} cuotas · S/ ${e.installment_amt != null ? parseFloat(e.installment_amt).toFixed(2) : (parseFloat(e.amount_exp)/parseInt(e.installments)).toFixed(2)}/c`
-                : null
+                : null,
+            raw: e   // objeto completo para el drawer
         })),
         ...incomes.map(i => ({
+            id:     i.id_inc,
             date:   i.date_inc,
             type:   'income',
             cat:    i.categories?.name_cat || 'Ingreso',
@@ -311,21 +329,22 @@ function renderTable(expenses, incomes) {
             desc:   i.description_inc,
             amount: parseFloat(i.amount_inc),
             method: i.payment_method,
-            cuotas: null
+            cuotas: null,
+            raw: i
         }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     document.getElementById('transaction-count').innerText = `${rows.length} registros`;
 
     if (rows.length === 0) {
-        body.innerHTML = `<tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--muted);font-size:0.8rem;">No hay transacciones para el periodo seleccionado</td></tr>`;
+        body.innerHTML = `<tr><td colspan="6" style="padding:2rem;text-align:center;color:var(--muted);font-size:0.8rem;">No hay transacciones para el periodo seleccionado</td></tr>`;
         return;
     }
 
     const methodLabel = { Cash: 'Efectivo', Debit: 'Débito', Credit: 'Crédito' };
 
     body.innerHTML = rows.map(t => `
-        <tr>
+        <tr class="tx-row" data-id="${t.id}" data-type="${t.type}">
             <td style="white-space:nowrap; color:var(--muted);">${t.date}</td>
             <td><span class="tx-badge ${t.type}">${t.type === 'income' ? 'Ingreso' : 'Gasto'}</span></td>
             <td>
@@ -340,8 +359,35 @@ function renderTable(expenses, incomes) {
             <td class="amount-cell ${t.type}">
                 ${t.type === 'income' ? '+' : '−'} S/ ${t.amount.toFixed(2)}
             </td>
+            <td class="actions-cell">
+                <button class="btn-edit-tx" data-id="${t.id}" data-type="${t.type}" title="Editar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-del-tx" data-id="${t.id}" data-type="${t.type}" title="Eliminar">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </button>
+            </td>
         </tr>
     `).join('');
+
+    // Eventos: editar
+    body.querySelectorAll('.btn-edit-tx').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id   = btn.dataset.id;
+            const type = btn.dataset.type;
+            const row  = rows.find(r => r.id === id);
+            if (row) openDrawer(row.raw, type);
+        });
+    });
+
+    // Eventos: eliminar
+    body.querySelectorAll('.btn-del-tx').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await deleteTransaction(btn.dataset.id, btn.dataset.type);
+        });
+    });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -666,6 +712,249 @@ function renderBudgetBars(budgets, expenses, filters) {
             </div>
         </div>`;
     }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// CRUD — DRAWER DE EDICIÓN
+// ─────────────────────────────────────────────────────────────
+
+function initDrawer() {
+    // Cerrar al hacer clic en el overlay
+    document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+    // Cerrar con botón X
+    document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+    // Cerrar con Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+    // Cambio de método en el drawer → actualizar tarjetas y sección cuotas
+    document.getElementById('d-method').addEventListener('change', e => {
+        const method = e.target.value;
+        const cardRow  = document.getElementById('d-card-row');
+        const instRow  = document.getElementById('d-inst-row');
+        cardRow.style.display = (method === 'Debit' || method === 'Credit') ? 'block' : 'none';
+        instRow.style.display = method === 'Credit' ? 'block' : 'none';
+        if (method !== 'Credit') {
+            document.getElementById('d-installments').value = 1;
+            document.getElementById('d-inst-amt').value     = '';
+        }
+        populateDrawerCards(method);
+    });
+
+    // Cambio de categoría → recargar subcategorías
+    document.getElementById('d-cat').addEventListener('change', async e => {
+        await populateDrawerSubcats(e.target.value);
+    });
+
+    // Formulario de edición
+    document.getElementById('drawer-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        await saveDrawer();
+    });
+}
+
+// Abre el drawer con los datos del registro
+async function openDrawer(raw, type) {
+    const drawer  = document.getElementById('crud-drawer');
+    const overlay = document.getElementById('drawer-overlay');
+    const title   = document.getElementById('drawer-title');
+
+    document.getElementById('d-id').value   = type === 'expense' ? raw.id_exp   : raw.id_inc;
+    document.getElementById('d-type').value = type;
+
+    if (type === 'expense') {
+        title.textContent = 'Editar Gasto';
+        document.getElementById('d-amount').value  = parseFloat(raw.amount_exp).toFixed(2);
+        document.getElementById('d-date').value    = raw.date_exp;
+        document.getElementById('d-desc').value    = raw.description_exp || '';
+        document.getElementById('d-method').value  = raw.payment_method || 'Cash';
+
+        // Secciones condicionales
+        const method = raw.payment_method;
+        document.getElementById('d-card-row').style.display = (method === 'Debit' || method === 'Credit') ? 'block' : 'none';
+        document.getElementById('d-inst-row').style.display = method === 'Credit' ? 'block' : 'none';
+
+        // Categorías
+        populateDrawerCats(raw.id_category);
+        await populateDrawerSubcats(raw.id_category, raw.id_subcat);
+
+        // Tarjetas filtradas por tipo
+        populateDrawerCards(method, raw.id_card);
+
+        // Cuotas
+        document.getElementById('d-installments').value = raw.installments || 1;
+        document.getElementById('d-inst-amt').value     = raw.installment_amt != null ? parseFloat(raw.installment_amt).toFixed(2) : '';
+
+        // Ocultar campo ingreso
+        document.getElementById('d-income-only').style.display = 'none';
+        document.getElementById('d-expense-only').style.display = 'block';
+
+    } else {
+        title.textContent = 'Editar Ingreso';
+        document.getElementById('d-amount').value  = parseFloat(raw.amount_inc).toFixed(2);
+        document.getElementById('d-date').value    = raw.date_inc;
+        document.getElementById('d-desc').value    = raw.description_inc || '';
+        document.getElementById('d-method').value  = raw.payment_method || 'Cash';
+
+        // Para ingresos no hay cuotas ni categoría de gastos
+        document.getElementById('d-card-row').style.display  = 'none';
+        document.getElementById('d-inst-row').style.display  = 'none';
+        document.getElementById('d-income-only').style.display   = 'block';
+        document.getElementById('d-expense-only').style.display  = 'none';
+    }
+
+    // Animar apertura
+    overlay.classList.add('visible');
+    drawer.classList.add('open');
+}
+
+function closeDrawer() {
+    document.getElementById('crud-drawer').classList.remove('open');
+    document.getElementById('drawer-overlay').classList.remove('visible');
+}
+
+// Poblar categorías en el drawer
+function populateDrawerCats(selectedId = null) {
+    const sel = document.getElementById('d-cat');
+    sel.innerHTML = '<option value="">Sin categoría</option>';
+    _allCats.forEach(c => {
+        const opt = new Option(c.name_cat, c.id_cat);
+        if (c.id_cat === selectedId) opt.selected = true;
+        sel.add(opt);
+    });
+}
+
+// Poblar subcategorías en el drawer
+async function populateDrawerSubcats(catId, selectedId = null) {
+    const sel = document.getElementById('d-subcat');
+    sel.innerHTML = '<option value="">Sin subcategoría</option>';
+    if (!catId) return;
+
+    const { data } = await supabase.from('subcategories')
+        .select('id_subcat, name_subcat')
+        .eq('id_category', catId)
+        .eq('deleted_subcat', false)
+        .order('name_subcat', { ascending: true });
+
+    data?.forEach(s => {
+        const opt = new Option(s.name_subcat, s.id_subcat);
+        if (s.id_subcat === selectedId) opt.selected = true;
+        sel.add(opt);
+    });
+}
+
+// Poblar tarjetas filtradas por tipo en el drawer
+function populateDrawerCards(method, selectedId = null) {
+    const sel = document.getElementById('d-card');
+    sel.innerHTML = '<option value="">Sin tarjeta</option>';
+    const typeFilter = method === 'Debit' ? 'Debit' : 'Credit';
+    _allCards.filter(c => c.type_card === typeFilter).forEach(c => {
+        const opt = new Option(c.name_card, c.id_card);
+        if (c.id_card === selectedId) opt.selected = true;
+        sel.add(opt);
+    });
+}
+
+// Guardar cambios (UPDATE)
+async function saveDrawer() {
+    const id    = document.getElementById('d-id').value;
+    const type  = document.getElementById('d-type').value;
+    const btn   = document.getElementById('drawer-save-btn');
+
+    btn.disabled    = true;
+    btn.textContent = 'Guardando...';
+
+    try {
+        if (type === 'expense') {
+            const method       = document.getElementById('d-method').value;
+            const totalAmount  = parseFloat(document.getElementById('d-amount').value);
+            const installments = parseInt(document.getElementById('d-installments').value) || 1;
+            const instAmt      = parseFloat(document.getElementById('d-inst-amt').value);
+
+            // Respetar el CHECK: installment_amt null si installments = 1
+            const installmentAmt = installments > 1 && !isNaN(instAmt) && instAmt > 0
+                ? instAmt
+                : null;
+
+            const updates = {
+                amount_exp:     totalAmount,
+                date_exp:       document.getElementById('d-date').value,
+                description_exp: document.getElementById('d-desc').value.trim() || 'Sin descripción',
+                payment_method: method,
+                id_category:    document.getElementById('d-cat').value   || null,
+                id_subcat:      document.getElementById('d-subcat').value || null,
+                id_card:        method === 'Cash' ? null : (document.getElementById('d-card').value || null),
+                installments:   installments,
+                installment_amt: installmentAmt,
+                updated_at:     new Date().toISOString()
+            };
+
+            const { error } = await supabase.from('expenses').update(updates).eq('id_exp', id);
+            if (error) throw error;
+
+        } else {
+            const updates = {
+                amount_inc:    parseFloat(document.getElementById('d-amount').value),
+                date_inc:      document.getElementById('d-date').value,
+                description_inc: document.getElementById('d-desc').value.trim() || null,
+                payment_method: document.getElementById('d-method').value
+            };
+
+            const { error } = await supabase.from('incomes').update(updates).eq('id_inc', id);
+            if (error) throw error;
+        }
+
+        closeDrawer();
+        showToast('✓ Guardado correctamente', 'success');
+        if (_reloadCallback) await _reloadCallback();
+
+    } catch (err) {
+        console.error('[drawer] Error al guardar:', err.message);
+        showToast('Error: ' + err.message, 'error');
+    } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Guardar cambios';
+    }
+}
+
+// Eliminar transacción (soft delete para expenses, delete para incomes)
+async function deleteTransaction(id, type) {
+    const label = type === 'expense' ? 'este gasto' : 'este ingreso';
+    if (!confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+
+    try {
+        let error;
+        if (type === 'expense') {
+            // expenses tiene deleted_exp — usar soft delete
+            ({ error } = await supabase.from('expenses')
+                .update({ deleted_exp: true, updated_at: new Date().toISOString() })
+                .eq('id_exp', id));
+        } else {
+            // incomes no tiene deleted — delete real
+            ({ error } = await supabase.from('incomes').delete().eq('id_inc', id));
+        }
+
+        if (error) throw error;
+        showToast('🗑 Eliminado correctamente', 'success');
+        if (_reloadCallback) await _reloadCallback();
+
+    } catch (err) {
+        console.error('[delete] Error:', err.message);
+        showToast('Error al eliminar: ' + err.message, 'error');
+    }
+}
+
+// Toast de notificación
+function showToast(msg, kind = 'success') {
+    let toast = document.getElementById('crud-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'crud-toast';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = msg;
+    toast.className   = `crud-toast ${kind}`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
 init();
