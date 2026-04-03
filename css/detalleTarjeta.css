@@ -313,6 +313,203 @@ body {
     color: var(--muted);
 }
 
+/* ── Panel Pago del Mes ── */
+.payment-panel {
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.payment-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.5rem 1.75rem 1.25rem;
+    border-bottom: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: linear-gradient(135deg, #faf9f7 0%, white 100%);
+}
+
+.payment-panel-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.payment-panel-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 0.2rem;
+}
+
+/* Ciclo badge */
+.cycle-badge {
+    margin: 1.25rem 1.75rem 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1rem;
+    background: var(--blue-light);
+    color: var(--blue);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border: 1px solid rgba(58, 111, 168, 0.2);
+    transition: all 0.2s;
+}
+
+.cycle-badge.active {
+    background: var(--gold-light);
+    color: #8a6a1f;
+    border-color: rgba(201, 168, 76, 0.3);
+}
+
+/* Desglose */
+.payment-breakdown {
+    padding: 1.25rem 1.75rem 0;
+    animation: fadeIn 0.2s ease;
+}
+
+.breakdown-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+@media (max-width: 700px) {
+    .breakdown-cols { grid-template-columns: 1fr; }
+}
+
+.breakdown-block {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.breakdown-block-title {
+    padding: 0.65rem 1rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+    font-weight: 500;
+    background: #faf9f7;
+    border-bottom: 1px solid var(--line);
+}
+
+.breakdown-list {
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid var(--line);
+    gap: 0.75rem;
+    animation: fadeIn 0.15s ease both;
+}
+
+.breakdown-row:last-child { border-bottom: none; }
+
+.breakdown-row-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.breakdown-row-desc {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.breakdown-row-date {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.1rem;
+}
+
+.breakdown-row-meta {
+    font-size: 0.7rem;
+    color: var(--blue);
+    margin-top: 0.1rem;
+}
+
+.breakdown-row-amount {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.breakdown-subtotal {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    background: #faf9f7;
+    border-top: 1px solid var(--line);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+/* Barra total */
+.payment-total-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 10px;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.payment-total-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(245, 240, 232, 0.55);
+    margin-bottom: 0.2rem;
+}
+
+.payment-total-sub {
+    font-size: 0.8rem;
+    color: rgba(245, 240, 232, 0.45);
+}
+
+.payment-total-amount {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+}
+
+/* Empty */
+.payment-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 3rem 2rem;
+    color: var(--muted);
+    font-size: 0.875rem;
+}
+
 /* ── Tabla de gastos ── */
 .expenses-section {
     background: white;

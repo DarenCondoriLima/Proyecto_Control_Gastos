@@ -1,0 +1,178 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --ink: #0f0e0d;
+    --paper: #f5f0e8;
+    --cream: #ede8dc;
+    --cream2: #e6e0d2;
+    --gold: #c9a84c;
+    --gold-light: rgba(201, 168, 76, 0.12);
+    --sage: #7a8c70;
+    --sage-light: rgba(122, 140, 112, 0.12);
+    --rust: #c05c3a;
+    --rust-light: rgba(192, 92, 58, 0.1);
+    --muted: #8a8070;
+    --line: rgba(15, 14, 13, 0.1);
+    --sidebar-w: 220px;
+    --shadow: 0 2px 16px rgba(15, 14, 13, 0.07);
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+}
+
+.main {
+    margin-left: var(--sidebar-w, 220px);
+    padding: 2rem;
+    min-height: 100vh;
+    min-width: 98vw;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background: var(--cream);
+}
+
+.form-container {
+    width: 100%;
+    max-width: 900px;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.form-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: var(--ink);
+    text-align: center;
+}
+
+.income-badge {
+    background: var(--gold-light);
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+    border: 1px dashed var(--gold);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Botones */
+.btn-submit {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary-submit {
+    background: var(--gold);
+    color: white;
+}
+
+.btn-primary-submit:hover {
+    background: var(--gold-light);
+}
+
+/* Estilos para las filas dinámicas de presupuesto */
+
+.budget-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.budget-row .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.budget-row .field label {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.budget-row .field input,
+.budget-row .field select {
+    padding: 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: var(--cream);
+}
+
+.budget-row .field input:focus,
+.budget-row .field select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold-light);
+}
+
+.btn-remove {
+    background: var(--rust);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.btn-remove:hover {
+    background: rgba(192, 92, 58, 0.8);
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+    .main {
+        margin-left: 0;
+        padding: 1.5rem;
+    }
+
+    .form-container {
+        padding: 2rem;
+    }
+
+    .btn-submit {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .budget-row {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-remove {
+        width: 100%;
+        justify-content: center;
+    }
+}

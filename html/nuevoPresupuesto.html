@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ControlGastos — Planificador Mensual</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <link rel="stylesheet" href="../css/nuevoPresupuesto.css">
+</head>
+<body>
+    <div id="sidebar-root"></div>
+    <script type="module" src="../js/sidebar-component.js"></script>
+
+    <main class="main">
+        <div class="form-container">
+            <h1 class="form-title">Planificación <span>Mensual</span></h1>
+            
+            <section class="period-selector" style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem;">
+                <div class="field">
+                    <select id="filter-month" style="padding: 0.5rem; border-radius: 8px; border: 1px solid var(--line);">
+                        <option value="1">Enero</option><option value="2">Febrero</option>
+                        <option value="3">Marzo</option><option value="4">Abril</option>
+                        <option value="5">Mayo</option><option value="6">Junio</option>
+                        <option value="7">Julio</option><option value="8">Agosto</option>
+                        <option value="9">Septiembre</option><option value="10">Octubre</option>
+                        <option value="11">Noviembre</option><option value="12">Diciembre</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <input type="number" id="filter-year" value="2026" style="width: 80px; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--line);">
+                </div>
+                <button id="btn-load-period" class="btn-small" style="background: var(--gold); color: white; border: none; border-radius: 8px; padding: 0 1rem; cursor: pointer;">Cargar</button>
+            </section>
+
+            <section class="budget-section">
+                <div class="income-badge">
+                    Disponible para distribuir: <span id="available-amount">S/ 0.00</span>
+                    <div style="margin-top:10px; font-size:0.8rem; opacity:0.8;">
+                        Ingreso Real del Mes (Débito/Efectivo): <span id="monthly-income" style="width:110px; border:none; background:transparent; font-weight:bold; color:var(--sage); text-align: center;" >S/ 0.00</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="budget-section">
+                <div id="budget-rows-container">
+                    </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" id="btn-add-row" class="btn-submit" style="background: var(--paper); color: var(--ink); border: 1px solid var(--line);">
+                        + Añadir Categoría
+                    </button>
+                    <button type="button" id="btn-save-all" class="btn-submit btn-primary-submit" style="flex: 1;">
+                        Guardar Cambios del Mes
+                    </button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script type="module" src="../js/nuevoPresupuesto.js"></script>
+</body>
+</html>
