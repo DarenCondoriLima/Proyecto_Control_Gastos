@@ -3,11 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuevo Gasto — ControlGastos</title>
+    <title>Registrar — ControlGastos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/sidebar.css">
-    <link rel="stylesheet" href="../css/nuevoGasto.css">
+    <style>
+/* ══════════════════════════════════════════════════════
+   RESET & ROOT
+══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --ink:        #0f0e0d;
+    --paper:      #f5f0e8;
+    --cream:      #ede8dc;
+    --cream2:     #e6e0d2;
+    --gold:       #c9a84c;
+    --gold-soft:  rgba(201,168,76,0.13);
+    --gold-line:  rgba(201,168,76,0.35);
+    --sage:       #7a8c70;
+    --sage-soft:  rgba(122,140,112,0.13);
+    --rust:       #c05c3a;
+    --rust-soft:  rgba(192,92,58,0.11);
+    --blue:       #4a7a9b;
+    --blue-soft:  rgba(74,122,155,0.11);
+    --muted:      #8a8070;
+    --line:       rgba(15,14,13,0.09);
+    --shadow-sm:  0 2px 12px rgba(15,14,13,0.06);
+    --shadow-md:  0 6px 32px rgba(15,14,13,0.10);
+    --sidebar-w:  220px;
+    --radius:     18px;
+    --radius-sm:  11px;
+}
+
+html, body { min-height: 100vh; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+}
+
+/* ══════════════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════════════ */
+.main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1.5rem 4rem;
+    min-height: 100vh;
+}
+
+/* ══════════════════════════════════════════════════════
+   HEADER DE PÁGINA
+══════════════════════════════════════════════════════ */
+.page-header {
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 1.8rem;
+}
+.page-header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 300;
+    line-height: 1.15;
+}
+.page-header h1 em { font-style: italic; color: var(--gold); }
+.page-header p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 0.35rem;
+}
+
+/* ══════════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════════ */
+.tab-strip {
+    width: 100%;
+    max-width: 560px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+    padding: 5px;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.65rem 0.5rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.tab-btn .tab-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+.tab-btn:hover { background: var(--cream); color: var(--ink); }
+
+.tab-btn.active.tab-expense {
+    background: var(--rust-soft);
+    color: var(--rust);
+    box-shadow: inset 0 0 0 1.5px var(--rust);
+}
+.tab-btn.active.tab-debt {
+    background: var(--gold-soft);
+    color: #9a7830;
+    box-shadow: inset 0 0 0 1.5px var(--gold-line);
+}
+.tab-btn.active.tab-payment {
+    background: var(--blue-soft);
+    color: var(--blue);
+    box-shadow: inset 0 0 0 1.5px rgba(74,122,155,0.35);
+}
+
+/* ══════════════════════════════════════════════════════
+   CARD CONTENEDORA
+══════════════════════════════════════════════════════ */
+.form-card {
+    width: 100%;
+    max-width: 560px;
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    animation: fadeUp 0.38s ease both;
+}
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Banda superior de color según pestaña */
+.form-card::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: var(--card-accent, var(--rust));
+    transition: background 0.25s;
+}
+
+/* ══════════════════════════════════════════════════════
+   PANELES DE PESTAÑA
+══════════════════════════════════════════════════════ */
+.tab-panel { display: none; padding: 2rem 2rem 2.2rem; }
+.tab-panel.active { display: block; }
+
+.panel-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.35rem;
+    font-weight: 300;
+    margin-bottom: 0.25rem;
+}
+.panel-title span { font-style: italic; }
+.panel-sub {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 1.8rem;
+}
+
+/* ══════════════════════════════════════════════════════
+   CAMPO GRANDE DE MONTO
+══════════════════════════════════════════════════════ */
+.amount-hero {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    background: var(--paper);
+    border: 2px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 0.9rem 1.2rem;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.18s;
+}
+.amount-hero:focus-within { border-color: var(--field-focus, var(--rust)); }
+.amount-hero .currency-label {
+    font-family: 'Fraunces', serif;
+    font-size: 1.6rem;
+    font-weight: 300;
+    color: var(--muted);
+    user-select: none;
+    flex-shrink: 0;
+}
+.amount-hero input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 300;
+    color: var(--field-color, var(--rust));
+    outline: none;
+    min-width: 0;
+}
+.amount-hero input::placeholder { color: var(--cream2); }
+
+/* ══════════════════════════════════════════════════════
+   CAMPOS
+══════════════════════════════════════════════════════ */
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    margin-bottom: 1.4rem;
+}
+.field-row {
+    display: grid;
+    gap: 0.85rem;
+}
+.field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.field { display: flex; flex-direction: column; gap: 0.32rem; }
+.field label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+}
+
+.field input,
+.field select,
+.field textarea {
+    width: 100%;
+    padding: 0.62rem 0.9rem;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--paper);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    appearance: none;
+    -webkit-appearance: none;
+}
+.field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a8070'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    outline: none;
+    border-color: var(--field-focus, var(--rust));
+    background: white;
+}
+.field textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
+.field-hint {
+    font-size: 0.65rem;
+    color: var(--muted);
+    line-height: 1.4;
+    margin-top: 0.1rem;
+}
+.field-error {
+    font-size: 0.65rem;
+    color: var(--rust);
+    display: none;
+    margin-top: 0.1rem;
+}
+
+/* ══════════════════════════════════════════════════════
+   SECCIÓN CUOTAS
+══════════════════════════════════════════════════════ */
+.installments-box {
+    background: var(--gold-soft);
+    border: 1.5px solid var(--gold-line);
+    border-radius: var(--radius-sm);
+    padding: 1.1rem 1.2rem;
+    display: none;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin-bottom: 1.1rem;
+}
+.installments-box.visible { display: flex; }
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    cursor: pointer;
+    user-select: none;
+}
+.checkbox-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--gold);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.checkbox-row span {
+    font-size: 0.8rem;
+    color: var(--ink);
+}
+
+.installment-preview {
+    display: none;
+    font-size: 0.75rem;
+    color: #9a7830;
+    font-weight: 600;
+    background: rgba(201,168,76,0.18);
+    padding: 0.35rem 0.7rem;
+    border-radius: 20px;
+    width: fit-content;
+}
+
+/* ══════════════════════════════════════════════════════
+   BOTÓN GUARDAR
+══════════════════════════════════════════════════════ */
+.btn-save {
+    width: 100%;
+    padding: 0.9rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--btn-bg, var(--ink));
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.btn-save:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-save:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ══════════════════════════════════════════════════════
+   DIVISOR
+══════════════════════════════════════════════════════ */
+.divider {
+    height: 1px;
+    background: var(--line);
+    margin: 1.2rem 0;
+}
+
+/* ══════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════ */
+.toast {
+    position: fixed;
+    bottom: 1.8rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--ink);
+    color: white;
+    padding: 0.72rem 1.4rem;
+    border-radius: 40px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    box-shadow: 0 6px 24px rgba(15,14,13,0.2);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.28s ease;
+    white-space: nowrap;
+}
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.toast.success { background: var(--sage); }
+.toast.error   { background: var(--rust); }
+
+/* ══════════════════════════════════════════════════════
+   COLORES SEGÚN PESTAÑA ACTIVA
+══════════════════════════════════════════════════════ */
+.tab-expense-active { --card-accent: var(--rust); --field-focus: var(--rust); --btn-bg: var(--rust); --field-color: var(--rust); }
+.tab-debt-active    { --card-accent: var(--gold); --field-focus: var(--gold); --btn-bg: #9a7830;     --field-color: #9a7830; }
+.tab-payment-active { --card-accent: var(--blue); --field-focus: var(--blue); --btn-bg: var(--blue); --field-color: var(--blue); }
+
+/* ══════════════════════════════════════════════════════
+   ESTADO VACÍO (sin tarjetas)
+══════════════════════════════════════════════════════ */
+.empty-state {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    background: var(--cream);
+    border-radius: var(--radius-sm);
+    border: 1.5px dashed var(--line);
+}
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .main { margin-left: 0; padding: 1.5rem 1rem 5rem; }
+}
+@media (max-width: 600px) {
+    .main { padding: 1rem 0.75rem 5rem; }
+    .page-header h1 { font-size: 1.55rem; }
+    .tab-btn .tab-label { display: none; }
+    .tab-btn { padding: 0.7rem; }
+    .tab-btn .tab-icon { font-size: 1.2rem; }
+    .tab-panel { padding: 1.4rem 1.2rem 1.8rem; }
+    .field-row.cols-2 { grid-template-columns: 1fr; }
+    .field-row.cols-3 { grid-template-columns: 1fr 1fr; }
+    .amount-hero input { font-size: 1.6rem; }
+    .amount-hero .currency-label { font-size: 1.3rem; }
+}
+@media (max-width: 400px) {
+    .field-row.cols-3 { grid-template-columns: 1fr; }
+}
+    </style>
 </head>
 <body>
 
@@ -15,100 +441,285 @@
 <script type="module" src="../js/sidebar-component.js"></script>
 
 <div class="main">
-    <div class="expense-card">
-        <div class="card-head">
-            <h2>Nuevo <span>Gasto</span></h2>
-            <p>Registra tus egresos con precisión</p>
-        </div>
-        <div class="card-body">
-            <form id="expense-form">
 
-                <!-- Monto -->
-                <div class="field">
-                    <label>Monto del gasto</label>
-                    <div class="input-group">
-                        <span>S/</span>
-                        <input type="text" id="exp-amount" placeholder="0.00" inputmode="decimal" required autofocus>
-                    </div>
+    <!-- HEADER -->
+    <div class="page-header">
+        <h1>Registrar <em>Movimiento</em></h1>
+        <p id="header-date">Cargando fecha…</p>
+    </div>
+
+    <!-- TAB STRIP -->
+    <div class="tab-strip" role="tablist">
+        <button class="tab-btn tab-expense active" data-tab="expense" role="tab">
+            <span class="tab-icon">📤</span>
+            <span class="tab-label">Nuevo Gasto</span>
+        </button>
+        <button class="tab-btn tab-debt" data-tab="debt" role="tab">
+            <span class="tab-icon">🤝</span>
+            <span class="tab-label">Nueva Deuda</span>
+        </button>
+        <button class="tab-btn tab-payment" data-tab="payment" role="tab">
+            <span class="tab-icon">💳</span>
+            <span class="tab-label">Pago Tarjeta</span>
+        </button>
+    </div>
+
+    <!-- CARD CON PANELES -->
+    <div class="form-card tab-expense-active" id="form-card">
+
+        <!-- ─── PANEL: GASTO ─── -->
+        <div class="tab-panel active" id="panel-expense" role="tabpanel">
+            <div class="panel-title">Nuevo <span>Gasto</span></div>
+            <div class="panel-sub">Registra un egreso de efectivo, débito o crédito</div>
+
+            <form id="expense-form" novalidate>
+                <!-- Monto grande -->
+                <div class="amount-hero" id="exp-amount-hero">
+                    <span class="currency-label">S/</span>
+                    <input type="text" id="exp-amount" placeholder="0.00" inputmode="decimal" autocomplete="off" required>
                 </div>
 
-                <!-- Fecha + Método -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="field-group">
+                    <!-- Fecha + Método -->
+                    <div class="field-row cols-2">
+                        <div class="field">
+                            <label>Fecha</label>
+                            <input type="date" id="exp-date" required>
+                        </div>
+                        <div class="field">
+                            <label>Método de Pago</label>
+                            <select id="exp-method">
+                                <option value="Cash">💵 Efectivo</option>
+                                <option value="Debit">💳 Débito</option>
+                                <option value="Credit">🏦 Crédito</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta (condicional) -->
+                    <div class="field" id="card-field" style="display:none;">
+                        <label>Tarjeta</label>
+                        <select id="exp-card"></select>
+                        <span class="field-error" id="card-error">Selecciona una tarjeta para continuar.</span>
+                    </div>
+
+                    <!-- Cuotas (condicional, crédito) -->
+                    <div class="installments-box" id="installments-field">
+                        <div class="field-row cols-2">
+                            <div class="field">
+                                <label>Número de Cuotas</label>
+                                <input type="number" id="exp-installments" value="1" min="1" max="72" step="1">
+                            </div>
+                            <div style="display:flex; align-items:flex-end; padding-bottom:0.2rem;">
+                                <div class="installment-preview" id="installment-preview"></div>
+                            </div>
+                        </div>
+                        <label class="checkbox-row">
+                            <input type="checkbox" id="is-interest-free" checked>
+                            <span>Sin intereses (total ÷ cuotas)</span>
+                        </label>
+                        <div class="field" id="manual-installment-field" style="display:none;">
+                            <label>Monto exacto por cuota (S/)</label>
+                            <input type="text" id="exp-inst-amount" placeholder="0.00" inputmode="decimal">
+                            <span class="field-hint">Ingresa el monto que aparece en tu estado de cuenta.</span>
+                        </div>
+                    </div>
+
+                    <!-- Categoría + Subcategoría -->
+                    <div class="field-row cols-2">
+                        <div class="field">
+                            <label>Categoría</label>
+                            <select id="exp-cat" required>
+                                <option value="">Seleccionar…</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Subcategoría</label>
+                            <select id="exp-subcat" disabled>
+                                <option value="">Elige categoría</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
                     <div class="field">
-                        <label>Fecha</label>
-                        <input type="date" id="exp-date" required>
-                    </div>
-                    <div class="field">
-                        <label>Método de Pago</label>
-                        <select id="exp-method" required>
-                            <option value="Cash">Efectivo</option>
-                            <option value="Debit">Débito</option>
-                            <option value="Credit">Crédito</option>
-                        </select>
+                        <label>Descripción <span style="font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+                        <textarea id="exp-desc" rows="2" placeholder="Ej: Supermercado Wong, almuerzo…"></textarea>
                     </div>
                 </div>
 
-                <!-- Tarjeta (visible para Débito y Crédito) -->
-                <div id="card-field" class="field" style="display: none;">
-                    <label>Seleccionar Tarjeta</label>
-                    <select id="exp-card">
-                        <option value="">Selecciona tarjeta...</option>
-                    </select>
-                    <span id="card-error" style="display:none; color:var(--rust); font-size:0.7rem; margin-top:0.3rem;">
-                        * Debes elegir una tarjeta para pagos electrónicos.
-                    </span>
-                </div>
-
-                <!-- Cuotas (visible solo para Crédito) -->
-                <div id="installments-field" class="field" style="display: none; background: var(--gold-light); padding: 1.5rem; border-radius: 15px;">
-                    <label>Número de Cuotas</label>
-                    <input type="number" id="exp-installments" value="1" min="1" max="72" step="1">
-
-                    <!-- Preview de cuota calculada en tiempo real -->
-                    <span id="installment-preview" style="display:none; font-size:0.75rem; color:var(--gold); margin-top:0.4rem; font-weight:500;"></span>
-
-                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 1rem;">
-                        <input type="checkbox" id="is-interest-free" checked style="width: auto;">
-                        <label style="margin-bottom: 0; text-transform: none; font-size: 0.8rem;">¿Es sin intereses? (cuota = total ÷ cuotas)</label>
-                    </div>
-
-                    <!-- Monto manual (visible si hay intereses) -->
-                    <div id="manual-installment-field" class="field" style="display: none; margin-top: 1rem;">
-                        <label>Monto de cada cuota (S/)</label>
-                        <input type="text" id="exp-inst-amount" placeholder="0.00" inputmode="decimal">
-                        <p class="field-hint">Ingresa el monto exacto que figura en tu estado de cuenta.</p>
-                    </div>
-                </div>
-
-                <!-- Categoría -->
-                <div class="field">
-                    <label>Categoría</label>
-                    <select id="exp-cat" required>
-                        <option value="">Selecciona categoría</option>
-                    </select>
-                </div>
-
-                <!-- Subcategoría -->
-                <div class="field">
-                    <label>Subcategoría</label>
-                    <select id="exp-subcat" required disabled>
-                        <option value="">Elige categoría primero</option>
-                    </select>
-                </div>
-
-                <!-- Descripción -->
-                <div class="field">
-                    <label>Descripción</label>
-                    <textarea id="exp-desc" rows="2" placeholder="Opcional..."></textarea>
-                </div>
-
-                <button type="submit" class="btn-save">Guardar Movimiento</button>
+                <button type="submit" class="btn-save" id="exp-submit-btn">
+                    <span>Guardar Gasto</span>
+                </button>
             </form>
         </div>
-    </div>
-</div>
+
+        <!-- ─── PANEL: DEUDA ─── -->
+        <div class="tab-panel" id="panel-debt" role="tabpanel">
+            <div class="panel-title">Nueva <span>Deuda</span></div>
+            <div class="panel-sub">Registra un préstamo o deuda pendiente de cobro</div>
+
+            <form id="debt-form" novalidate>
+                <!-- Monto -->
+                <div class="amount-hero">
+                    <span class="currency-label">S/</span>
+                    <input type="text" id="debt-amount" placeholder="0.00" inputmode="decimal" required>
+                </div>
+
+                <div class="field-group">
+                    <!-- Deudor -->
+                    <div class="field">
+                        <label>Nombre del Deudor</label>
+                        <input type="text" id="debt-debtor" placeholder="Ej: Juan Pérez" required>
+                    </div>
+
+                    <!-- Fecha inicio + Vencimiento -->
+                    <div class="field-row cols-2">
+                        <div class="field">
+                            <label>Fecha del Préstamo</label>
+                            <input type="date" id="debt-date" required>
+                        </div>
+                        <div class="field">
+                            <label>Fecha de Vencimiento <span style="font-weight:400;">(opc.)</span></label>
+                            <input type="date" id="debt-due-date">
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="field">
+                        <label>Descripción / Motivo</label>
+                        <textarea id="debt-desc" rows="2" placeholder="Ej: Préstamo para compra de celular…" required></textarea>
+                    </div>
+
+                    <!-- Estado inicial -->
+                    <div class="field">
+                        <label>Estado</label>
+                        <select id="debt-status">
+                            <option value="Pending">⏳ Pendiente</option>
+                            <option value="Partial">🔄 Pago Parcial</option>
+                        </select>
+                    </div>
+
+                    <!-- Monto ya pagado (si parcial) -->
+                    <div class="field" id="debt-paid-field" style="display:none;">
+                        <label>Monto ya recibido (S/)</label>
+                        <input type="text" id="debt-amount-paid" placeholder="0.00" inputmode="decimal">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-save" id="debt-submit-btn">
+                    <span>Registrar Deuda</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- ─── PANEL: PAGO TARJETA ─── -->
+        <div class="tab-panel" id="panel-payment" role="tabpanel">
+            <div class="panel-title">Pago de <span>Tarjeta</span></div>
+            <div class="panel-sub">Registra el pago mensual de tu tarjeta de crédito</div>
+
+            <form id="payment-form" novalidate>
+                <!-- Monto -->
+                <div class="amount-hero">
+                    <span class="currency-label">S/</span>
+                    <input type="text" id="pay-amount" placeholder="0.00" inputmode="decimal" required>
+                </div>
+
+                <div class="field-group">
+                    <!-- Tarjeta destino -->
+                    <div class="field">
+                        <label>Tarjeta de Crédito que pagas</label>
+                        <select id="pay-credit-card" required>
+                            <option value="">Seleccionar tarjeta de crédito…</option>
+                        </select>
+                        <span class="field-hint" id="pay-credit-hint"></span>
+                    </div>
+
+                    <!-- Fecha + Cuenta origen -->
+                    <div class="field-row cols-2">
+                        <div class="field">
+                            <label>Fecha del Pago</label>
+                            <input type="date" id="pay-date" required>
+                        </div>
+                        <div class="field">
+                            <label>Cuenta de Origen (Débito)</label>
+                            <select id="pay-source-card">
+                                <option value="">Efectivo / Ventanilla</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tipo de pago -->
+                    <div class="field">
+                        <label>Tipo de Pago</label>
+                        <div class="field-row cols-3" style="margin-top:0.2rem;">
+                            <label class="pay-type-opt" data-val="minimum">
+                                <input type="radio" name="pay-type" value="minimum">
+                                <span>Mínimo</span>
+                            </label>
+                            <label class="pay-type-opt" data-val="total">
+                                <input type="radio" name="pay-type" value="total">
+                                <span>Total</span>
+                            </label>
+                            <label class="pay-type-opt" data-val="custom" checked>
+                                <input type="radio" name="pay-type" value="custom" checked>
+                                <span>Otro</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Nota -->
+                    <div class="field">
+                        <label>Nota <span style="font-weight:400;">(opcional)</span></label>
+                        <textarea id="pay-note" rows="2" placeholder="Ej: Pago cuota diciembre BCP…"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-save" id="pay-submit-btn">
+                    <span>Registrar Pago</span>
+                </button>
+            </form>
+        </div>
+
+    </div><!-- /form-card -->
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- Estilos radio buttons de tipo de pago -->
+<style>
+.pay-type-opt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.55rem 0.4rem;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: center;
+    transition: all 0.15s;
+    background: var(--paper);
+}
+.pay-type-opt input[type="radio"] { display: none; }
+.pay-type-opt:has(input:checked) {
+    border-color: var(--blue);
+    background: var(--blue-soft);
+    color: var(--blue);
+}
+.pay-type-opt:hover { border-color: var(--blue); }
+</style>
 
 <script type="module" src="../js/main.js"></script>
 <script type="module" src="../js/movimientos.js"></script>
+<script>
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('es-PE', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+});
+</script>
 </body>
 </html>

@@ -231,3 +231,20 @@ CREATE TABLE public.credit_card_payments (
     source_account uuid REFERENCES public.cards(id_card), -- De dónde salió el dinero (Débito)
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 1. Habilitar RLS en la tabla de pagos de tarjeta
+ALTER TABLE public.credit_card_payments ENABLE ROW LEVEL SECURITY;
+
+-- 2. Crear política para que los usuarios puedan insertar sus propios pagos
+CREATE POLICY "Usuarios pueden insertar sus propios pagos" 
+ON public.credit_card_payments 
+FOR INSERT 
+WITH CHECK (auth.uid() = id_user);
+
+-- 3. Crear política para que los usuarios puedan ver sus propios pagos
+CREATE POLICY "Usuarios pueden ver sus propios pagos" 
+ON public.credit_card_payments 
+FOR SELECT 
+USING (auth.uid() = id_user);
+
+ALTER TABLE public.credit_card_payments ADD COLUMN IF NOT EXISTS notes TEXT;
