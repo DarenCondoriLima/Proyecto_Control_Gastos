@@ -322,6 +322,32 @@
             .bottom-row { grid-template-columns: 1fr; }
         }
 
+        /* ─── PANEL DE TARJETAS ─── */
+        .cp-section-label {
+            font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--muted); padding: 0.2rem 0;
+        }
+        .cp-card-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.5rem 0.7rem; border-radius: 10px;
+            background: var(--paper); border: 1px solid var(--line);
+            gap: 0.5rem;
+        }
+        .cp-card-info { display: flex; flex-direction: column; gap: 0.1rem; overflow: hidden; }
+        .cp-card-name { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cp-card-type { font-size: 0.62rem; color: var(--muted); }
+        .cp-card-bal  { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 600; white-space: nowrap; }
+        .cp-mini-bar  { height: 4px; width: 80px; background: var(--cream2); border-radius: 2px; overflow: hidden; margin-top: 3px; margin-left: auto; }
+        .cp-mini-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+        /* ─── AVISO SEPARACIÓN CRÉDITO ─── */
+        .credit-notice {
+            background: var(--gold-light); border: 1px solid rgba(201,168,76,0.3);
+            border-radius: 10px; padding: 0.65rem 1rem;
+            font-size: 0.73rem; color: #7a5f15;
+            margin-bottom: 1.5rem; line-height: 1.5;
+        }
+
         /* ─── SKELETON LOADING ─── */
         .skeleton {
             background: linear-gradient(90deg, var(--cream) 25%, var(--cream2) 50%, var(--cream) 75%);
@@ -366,9 +392,9 @@
         <div class="kpi-grid">
             <div class="kpi-card net">
                 <div class="kpi-icon">⚖️</div>
-                <div class="kpi-label">Saldo Neto</div>
+                <div class="kpi-label">Flujo de Caja</div>
                 <div class="kpi-value" id="net-balance-display">S/ 0.00</div>
-                <div class="kpi-trend" id="net-trend">—</div>
+                <div class="kpi-trend" id="net-trend">Ingresos − gastos reales del periodo</div>
             </div>
             <div class="kpi-card inc">
                 <div class="kpi-icon">📈</div>
@@ -380,20 +406,25 @@
                 <div class="kpi-icon">📉</div>
                 <div class="kpi-label">Total Gastos</div>
                 <div class="kpi-value" id="total-exp-display" style="color:var(--rust);">S/ 0.00</div>
-                <div class="kpi-trend" id="exp-count">0 registros</div>
+                <div class="kpi-trend" id="exp-count" style="font-size:0.6rem;">—</div>
             </div>
             <div class="kpi-card quot">
-                <div class="kpi-icon">💳</div>
-                <div class="kpi-label">Cuotas del Mes</div>
+                <div class="kpi-icon">💵</div>
+                <div class="kpi-label">Dinero Disponible</div>
                 <div class="kpi-value" id="card-installments-display" style="color:var(--gold);">S/ 0.00</div>
-                <div class="kpi-trend" id="quot-count">0 pagos en cuotas</div>
+                <div class="kpi-trend" id="quot-count">Saldo Déb/Efectivo hoy</div>
             </div>
             <div class="kpi-card debt">
-                <div class="kpi-icon">🤝</div>
-                <div class="kpi-label">Por Cobrar</div>
+                <div class="kpi-icon">💳</div>
+                <div class="kpi-label">Deuda Tarj. Crédito</div>
                 <div class="kpi-value" id="debt-total-display" style="color:var(--blue);">S/ 0.00</div>
-                <div class="kpi-trend"><button onclick="location.href='deudores.html'" style="border:none;background:none;color:var(--blue);font-size:0.65rem;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0;">Ver deudores →</button></div>
+                <div class="kpi-trend"><button onclick="location.href='gestionTarjetas.html'" style="border:none;background:none;color:var(--blue);font-size:0.65rem;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0;">Ver tarjetas →</button></div>
             </div>
+        </div>
+
+        <!-- AVISO SEPARACIÓN CRÉDITO -->
+        <div id="credit-notice" class="credit-notice" style="display:none;">
+            ⚠️ <strong>Nota:</strong> El "Flujo de Caja" y el "Dinero Disponible" <em>no incluyen</em> gastos de tarjeta de crédito — esos son deuda futura, no dinero que ya salió de tu cuenta.
         </div>
 
         <!-- FILTROS -->
@@ -568,16 +599,34 @@
             <!-- Método de pago -->
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">💰 Gastos por Método de Pago</span>
+                    <span class="card-title">💰 Gastos por Método</span>
+                    <span class="card-badge" style="background:var(--rust-light);color:var(--rust);">Solo del periodo</span>
                 </div>
                 <canvas id="methodChart" height="200"></canvas>
                 <div id="method-legend" class="pie-legend"></div>
             </div>
 
-            <!-- Cuotas pendientes -->
+            <!-- Panel de cuentas / tarjetas -->
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">📅 Cuotas del Periodo</span>
+                    <span class="card-title">🏦 Estado de Cuentas</span>
+                    <span class="card-badge">Saldo actual</span>
+                </div>
+                <div id="cards-panel-body" style="display:flex;flex-direction:column;gap:0.4rem;">
+                    <div class="trend-empty">Cargando…</div>
+                </div>
+                <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--line);font-size:0.68rem;color:var(--muted);line-height:1.5;">
+                    💡 El <strong>Flujo de Caja</strong> del periodo solo considera gastos <em>Cash/Débito</em>. Los gastos con tarjeta de crédito se muestran por separado porque aún no han salido de tu dinero real.
+                </div>
+            </div>
+        </div>
+
+        <!-- FILA CUOTAS -->
+        <div class="bottom-row" style="margin-top:0;">
+            <!-- Cuotas pendientes -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header">
+                    <span class="card-title">📅 Compras en Cuotas del Periodo</span>
                     <span class="card-badge" id="quot-total-label">S/ 0.00 total</span>
                 </div>
                 <div id="installments-container" style="max-height:260px; overflow-y:auto;">

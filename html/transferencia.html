@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transferencias — ControlGastos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200;0,9..144,400;1,9..144,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <style>
+/* ══════════════════════════════════════════════════════
+   ROOT & RESET
+══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --ink:        #0f0e0d;
+    --paper:      #f5f0e8;
+    --cream:      #ede8dc;
+    --cream2:     #e4ddd0;
+    --gold:       #c9a84c;
+    --gold-soft:  rgba(201,168,76,0.12);
+    --sage:       #7a8c70;
+    --sage-soft:  rgba(122,140,112,0.13);
+    --rust:       #c05c3a;
+    --rust-soft:  rgba(192,92,58,0.10);
+    --blue:       #4a7a9b;
+    --blue-soft:  rgba(74,122,155,0.11);
+    --muted:      #8a8070;
+    --line:       rgba(15,14,13,0.08);
+    --shadow:     0 2px 16px rgba(15,14,13,0.06);
+    --shadow-md:  0 6px 28px rgba(15,14,13,0.10);
+    --sidebar-w:  220px;
+    --radius:     18px;
+    --radius-sm:  12px;
+}
+
+html, body { min-height: 100vh; }
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+}
+
+/* ══════════════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════════════ */
+.main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    min-height: 100vh;
+}
+
+/* ══════════════════════════════════════════════════════
+   TOPBAR
+══════════════════════════════════════════════════════ */
+.topbar {
+    grid-column: 1 / -1;
+    padding: 1.2rem 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    background: rgba(245,240,232,0.85);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 40;
+}
+.topbar-left h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem; font-weight: 200; line-height: 1.1;
+}
+.topbar-left h1 em { font-style: italic; color: var(--blue); }
+.topbar-date { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+.btn-back {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.48rem 1rem; border: 1.5px solid var(--line);
+    border-radius: var(--radius-sm); background: white;
+    font-family: 'DM Sans', sans-serif; font-size: 0.78rem;
+    font-weight: 500; color: var(--muted); cursor: pointer;
+    transition: all 0.15s; text-decoration: none;
+}
+.btn-back:hover { border-color: var(--ink); color: var(--ink); }
+
+/* ══════════════════════════════════════════════════════
+   COLUMNA IZQUIERDA — FORMULARIO
+══════════════════════════════════════════════════════ */
+.col-form {
+    padding: 2rem 2rem 4rem;
+    overflow-y: auto;
+    border-right: 1px solid var(--line);
+}
+
+/* ── Cuentas seleccionables ── */
+.accounts-section { margin-bottom: 2rem; }
+.accounts-section-label {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.85rem;
+}
+
+.accounts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.65rem;
+}
+
+.account-card {
+    position: relative;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: white;
+    cursor: pointer;
+    transition: all 0.18s;
+    user-select: none;
+}
+.account-card:hover { border-color: var(--blue); transform: translateY(-1px); box-shadow: var(--shadow); }
+.account-card.selected-origin  { border-color: var(--rust);  background: var(--rust-soft); }
+.account-card.selected-dest    { border-color: var(--sage);  background: var(--sage-soft); }
+.account-card.disabled-card    { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+
+.ac-icon { font-size: 1.1rem; margin-bottom: 0.35rem; }
+.ac-name {
+    font-size: 0.8rem; font-weight: 600; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ac-type {
+    font-size: 0.62rem; color: var(--muted); margin-top: 0.12rem; font-weight: 500;
+}
+.ac-balance {
+    font-size: 0.78rem; font-weight: 700; margin-top: 0.4rem;
+}
+.ac-balance.positive { color: var(--sage); }
+.ac-balance.negative { color: var(--rust); }
+.ac-balance.zero     { color: var(--muted); }
+
+/* Badge de rol seleccionado */
+.ac-role-badge {
+    position: absolute; top: -8px; right: 8px;
+    font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 0.18rem 0.55rem;
+    border-radius: 20px; opacity: 0; transition: opacity 0.15s;
+}
+.selected-origin .ac-role-badge {
+    background: var(--rust); color: white; opacity: 1;
+}
+.selected-dest .ac-role-badge {
+    background: var(--sage); color: white; opacity: 1;
+}
+
+/* ── Flecha de dirección ── */
+.transfer-arrow {
+    display: flex; align-items: center; justify-content: center;
+    gap: 1rem; margin: 1.5rem 0;
+    font-size: 0.78rem; color: var(--muted);
+}
+.arrow-line {
+    flex: 1; height: 1px; background: var(--line);
+    position: relative;
+}
+.arrow-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: white; border: 2px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; transition: all 0.2s; flex-shrink: 0;
+}
+.arrow-icon.ready {
+    border-color: var(--blue);
+    background: var(--blue-soft);
+    animation: pulse-arrow 1.5s ease infinite;
+}
+@keyframes pulse-arrow {
+    0%,100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+}
+
+/* ── Vista previa origen → destino ── */
+.preview-bar {
+    display: none;
+    align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--blue-soft);
+    border: 1.5px solid rgba(74,122,155,0.2);
+    border-radius: var(--radius-sm);
+    margin-bottom: 1.5rem;
+    font-size: 0.78rem;
+    animation: fadeSlide 0.2s ease;
+}
+.preview-bar.visible { display: flex; }
+@keyframes fadeSlide { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+.preview-chip {
+    padding: 0.25rem 0.65rem; border-radius: 20px;
+    font-weight: 600; font-size: 0.72rem; white-space: nowrap;
+}
+.preview-chip.origin { background: var(--rust-soft); color: var(--rust); }
+.preview-chip.dest   { background: var(--sage-soft); color: var(--sage); }
+.preview-sep { color: var(--muted); font-size: 0.85rem; }
+
+/* ── Formulario de monto ── */
+.form-section { margin-bottom: 1.5rem; }
+
+.amount-hero {
+    display: flex; align-items: baseline; gap: 0.5rem;
+    background: var(--paper); border: 2px solid var(--line);
+    border-radius: var(--radius-sm); padding: 0.9rem 1.2rem;
+    margin-bottom: 0.5rem; transition: border-color 0.18s;
+}
+.amount-hero:focus-within { border-color: var(--blue); }
+.amount-hero.error-state   { border-color: var(--rust) !important; }
+.currency-label {
+    font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 200;
+    color: var(--muted); flex-shrink: 0;
+}
+.amount-hero input {
+    flex: 1; border: none; background: transparent;
+    font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 300;
+    color: var(--blue); outline: none; min-width: 0;
+}
+.amount-hero input::placeholder { color: var(--cream2); }
+
+/* Indicador de saldo */
+.balance-indicator {
+    display: none; align-items: center; gap: 0.5rem;
+    padding: 0.42rem 0.85rem; border-radius: var(--radius-sm);
+    background: var(--sage-soft); border: 1px solid rgba(122,140,112,0.2);
+    font-size: 0.74rem; margin-bottom: 1.2rem; transition: all 0.2s;
+}
+.balance-indicator.show { display: flex; }
+.balance-indicator.warn { background: var(--rust-soft); border-color: rgba(192,92,58,0.2); }
+.bal-icon { font-size: 0.82rem; }
+.bal-label { color: var(--muted); font-weight: 500; }
+.bal-value { font-weight: 700; }
+.bal-alert { display: none; color: var(--rust); font-weight: 600; margin-left: auto; font-size: 0.7rem; }
+
+/* Campos normales */
+.field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
+.field label {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted);
+}
+.field input, .field select, .field textarea {
+    width: 100%; padding: 0.6rem 0.9rem;
+    border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--paper); font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; color: var(--ink); outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    appearance: none; -webkit-appearance: none;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--blue); background: white;
+}
+.field textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
+.field-hint { font-size: 0.64rem; color: var(--muted); margin-top: 0.18rem; }
+
+/* Botón de envío */
+.btn-submit {
+    width: 100%; padding: 0.95rem;
+    border: none; border-radius: var(--radius-sm);
+    background: var(--blue); color: white;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 600;
+    cursor: pointer; letter-spacing: 0.02em;
+    transition: all 0.18s; display: flex; align-items: center;
+    justify-content: center; gap: 0.5rem;
+}
+.btn-submit:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* ══════════════════════════════════════════════════════
+   COLUMNA DERECHA — HISTORIAL
+══════════════════════════════════════════════════════ */
+.col-history {
+    background: white;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+}
+
+.history-header {
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+}
+.history-header h2 {
+    font-family: 'Fraunces', serif; font-size: 1.05rem; font-weight: 400;
+}
+.history-count {
+    font-size: 0.7rem; color: var(--muted); margin-top: 2px;
+}
+
+/* Filtro rápido de historial */
+.history-filter {
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+    display: flex; gap: 0.4rem; flex-shrink: 0;
+}
+.hf-chip {
+    padding: 0.3rem 0.8rem; border: 1.5px solid var(--line);
+    border-radius: 20px; font-size: 0.7rem; font-weight: 500;
+    background: var(--paper); color: var(--muted); cursor: pointer;
+    transition: all 0.15s; font-family: inherit;
+}
+.hf-chip.active { background: var(--ink); color: white; border-color: var(--ink); }
+
+.history-list {
+    flex: 1; overflow-y: auto; padding: 0.5rem 0;
+}
+.history-list::-webkit-scrollbar { width: 4px; }
+.history-list::-webkit-scrollbar-thumb { background: var(--cream2); border-radius: 4px; }
+
+/* Item de historial */
+.tx-item {
+    display: flex; align-items: flex-start; gap: 0.85rem;
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.12s; animation: fadeIn 0.2s ease both;
+    cursor: default;
+}
+.tx-item:last-child { border-bottom: none; }
+.tx-item:hover { background: var(--paper); }
+
+.tx-icon-wrap {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--blue-soft); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+}
+
+.tx-body { flex: 1; min-width: 0; }
+.tx-route {
+    font-size: 0.8rem; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tx-route .from-name { color: var(--rust); }
+.tx-route .to-name   { color: var(--sage); }
+.tx-route .arrow     { color: var(--muted); margin: 0 0.3rem; }
+.tx-date  { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+.tx-note  { font-size: 0.7rem; color: var(--muted); margin-top: 2px; font-style: italic; }
+
+.tx-amount {
+    font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 400;
+    color: var(--blue); white-space: nowrap; flex-shrink: 0;
+}
+
+/* Empty state del historial */
+.history-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 3rem 2rem; gap: 0.6rem; color: var(--muted);
+}
+.history-empty-icon { font-size: 2.2rem; opacity: 0.3; }
+.history-empty p { font-size: 0.8rem; text-align: center; }
+
+/* ══════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════ */
+.toast {
+    position: fixed; bottom: 1.8rem; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--ink); color: white;
+    padding: 0.72rem 1.4rem; border-radius: 40px;
+    font-size: 0.82rem; font-weight: 500;
+    box-shadow: 0 6px 24px rgba(15,14,13,0.2);
+    z-index: 999; opacity: 0; pointer-events: none;
+    transition: all 0.28s ease; white-space: nowrap;
+    max-width: 90vw;
+}
+.toast.show   { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--sage); }
+.toast.error   { background: var(--rust); }
+
+/* ══════════════════════════════════════════════════════
+   ANIMACIONES
+══════════════════════════════════════════════════════ */
+@keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+
+/* ══════════════════════════════════════════════════════
+   SKELETON
+══════════════════════════════════════════════════════ */
+.skeleton {
+    background: linear-gradient(90deg, var(--cream) 25%, var(--cream2) 50%, var(--cream) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite; border-radius: 6px;
+}
+@keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════ */
+@media (max-width: 1100px) {
+    .main { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
+    .col-history { border-right: none; border-top: 1px solid var(--line); max-height: 420px; }
+}
+@media (max-width: 768px) {
+    .main { margin-left: 0; }
+    .col-form { padding: 1.5rem 1rem 3rem; }
+    .topbar { padding: 1rem; }
+    .accounts-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+}
+    </style>
+</head>
+<body>
+
+<div id="sidebar-root"></div>
+<script type="module" src="../js/sidebar-component.js"></script>
+
+<div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <h1>Transferir <em>Fondos</em></h1>
+            <div class="topbar-date" id="header-date"></div>
+        </div>
+        <a href="dashboard.html" class="btn-back">← Volver</a>
+    </header>
+
+    <!-- COLUMNA IZQUIERDA: FORMULARIO -->
+    <div class="col-form">
+
+        <!-- 1. Selección de cuenta ORIGEN -->
+        <div class="accounts-section">
+            <div class="accounts-section-label">1 · Cuenta de origen <span style="color:var(--rust);">●</span></div>
+            <div class="accounts-grid" id="origin-grid">
+                <!-- Se rellena con JS -->
+            </div>
+        </div>
+
+        <!-- Flecha animada -->
+        <div class="transfer-arrow">
+            <div class="arrow-line"></div>
+            <div class="arrow-icon" id="arrow-icon">↓</div>
+            <div class="arrow-line"></div>
+        </div>
+
+        <!-- 2. Selección de cuenta DESTINO -->
+        <div class="accounts-section">
+            <div class="accounts-section-label">2 · Cuenta de destino <span style="color:var(--sage);">●</span></div>
+            <div class="accounts-grid" id="dest-grid">
+                <!-- Se rellena con JS -->
+            </div>
+        </div>
+
+        <!-- Preview origen → destino -->
+        <div class="preview-bar" id="preview-bar">
+            <span class="preview-chip origin" id="preview-origin-name">—</span>
+            <span class="preview-sep">→</span>
+            <span class="preview-chip dest" id="preview-dest-name">—</span>
+        </div>
+
+        <!-- 3. Monto y detalles -->
+        <form id="transfer-form" novalidate>
+
+            <div class="form-section">
+                <div class="accounts-section-label" style="margin-bottom:0.7rem;">3 · Monto a transferir</div>
+                <div class="amount-hero" id="amount-hero">
+                    <span class="currency-label">S/</span>
+                    <input type="text" id="transfer-amount" placeholder="0.00"
+                           inputmode="decimal" autocomplete="off">
+                </div>
+
+                <!-- Indicador de saldo de la cuenta origen -->
+                <div class="balance-indicator" id="balance-indicator">
+                    <span class="bal-icon">✓</span>
+                    <span class="bal-label">Disponible en origen:</span>
+                    <span class="bal-value">S/ 0.00</span>
+                    <span class="bal-alert"></span>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Fecha</label>
+                <input type="date" id="transfer-date">
+            </div>
+
+            <div class="field">
+                <label>Nota <span style="font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+                <textarea id="transfer-note" rows="2"
+                    placeholder="Ej: Recarga tarjeta débito, ahorro mensual…"></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submit-btn" disabled>
+                <span id="submit-label">Selecciona origen y destino</span>
+            </button>
+        </form>
+
+    </div><!-- /col-form -->
+
+    <!-- COLUMNA DERECHA: HISTORIAL -->
+    <div class="col-history">
+        <div class="history-header">
+            <h2>Historial de Transferencias</h2>
+            <div class="history-count" id="history-count">Cargando…</div>
+        </div>
+        <div class="history-filter">
+            <button class="hf-chip active" data-filter="all">Todas</button>
+            <button class="hf-chip" data-filter="week">Esta semana</button>
+            <button class="hf-chip" data-filter="month">Este mes</button>
+        </div>
+        <div class="history-list" id="history-list">
+            <!-- Skeleton inicial -->
+            <div style="padding:1rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
+                ${[1,2,3,4].map(() => `
+                    <div style="display:flex;gap:0.75rem;align-items:center;">
+                        <div class="skeleton" style="width:36px;height:36px;border-radius:10px;flex-shrink:0;"></div>
+                        <div style="flex:1;display:flex;flex-direction:column;gap:0.35rem;">
+                            <div class="skeleton" style="height:12px;width:75%;"></div>
+                            <div class="skeleton" style="height:10px;width:45%;"></div>
+                        </div>
+                        <div class="skeleton" style="height:14px;width:60px;"></div>
+                    </div>`).join('')}
+            </div>
+        </div>
+    </div><!-- /col-history -->
+
+</div><!-- /main -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+document.getElementById('header-date').textContent = new Date().toLocaleDateString('es-PE', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+});
+</script>
+<script type="module" src="../js/main.js"></script>
+<script type="module" src="../js/transferencias.js"></script>
+</body>
+</html>

@@ -88,7 +88,13 @@ BEGIN
     (cat_id, NEW.id, 'ABL'), (cat_id, NEW.id, 'Ingresos Brutos'), (cat_id, NEW.id, 'Riqueza'),
     (cat_id, NEW.id, 'Ganancias'), (cat_id, NEW.id, 'I - Otros');
 
-    -- 11. INGRESOS (Nueva sección obligatoria)
+    -- 11. Pago Tarjeta (Tipo: Gasto)
+    INSERT INTO public.Categories (ID_USER, NAME_CAT, GLOBAL_CAT, type_cat) 
+    VALUES (NEW.id, 'Pago Tarjeta', TRUE, 'gasto') RETURNING ID_CAT INTO cat_id;
+    INSERT INTO public.SubCategories (ID_CATEGORY, ID_USER, NAME_SUBCAT) VALUES
+    (cat_id, NEW.id, 'Credito');
+
+    -- 12. INGRESOS (Nueva sección obligatoria)
     -- Insertamos categorías que Paulo verá en nuevoIngreso.html
     INSERT INTO public.Categories (ID_USER, NAME_CAT, GLOBAL_CAT, type_cat) 
     VALUES (NEW.id, 'Sueldo', TRUE, 'ingreso');
@@ -98,6 +104,21 @@ BEGIN
     
     INSERT INTO public.Categories (ID_USER, NAME_CAT, GLOBAL_CAT, type_cat) 
     VALUES (NEW.id, 'Otros Ingresos', TRUE, 'ingreso');
+
+    -- 13. BILLETERA DE EFECTIVO
+    -- Creamos automáticamente la cuenta de "Efectivo" con saldo 0
+    INSERT INTO public.Cards (ID_USER, NAME_CARD, TYPE_CARD, CURRENT_BALANCE, DELETED_CARD) 
+    VALUES (NEW.id,'Efectivo', 'Cash', 0.00, FALSE);
+
+    -- 14. PRÉSTAMOS 
+    -- Insertamos la categoría "Préstamos Realizados" para que el usuario pueda registrar los préstamos que le hacen a otros (Tipo: Gasto)
+    -- Dentro de handle_new_user()
+    INSERT INTO public.Categories (ID_USER, NAME_CAT, TYPE_CAT) 
+    VALUES (NEW.id, 'Préstamos Realizados', 'gasto') 
+    RETURNING ID_CAT INTO cat_id;
+
+    INSERT INTO public.SubCategories (ID_CATEGORY, ID_USER, NAME_SUBCAT) 
+    VALUES (cat_id, NEW.id, 'Préstamo');
 
     RETURN NEW;
 END;

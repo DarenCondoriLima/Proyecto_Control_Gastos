@@ -8,9 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/sidebar.css">
     <link rel="stylesheet" href="../css/nuevoIngreso.css">
-    <style>
-        /* Inline styles removed and moved to nuevoIngreso.css */
-    </style>
 </head>
 <body>
 
@@ -19,20 +16,33 @@
 
 <div class="main">
     <div class="income-card">
+
         <div class="card-head">
             <h2>Nuevo <span>Ingreso</span></h2>
             <p>Registra tus entradas de dinero con claridad</p>
         </div>
+
         <div class="card-body">
-            <form id="income-form">
+            <form id="income-form" novalidate>
+
+                <!-- Monto -->
                 <div class="field">
                     <label>Monto del ingreso</label>
                     <div class="input-group">
                         <span>S/</span>
-                        <input type="text" id="inc-amount" placeholder="0.00" inputmode="decimal" required autofocus>
+                        <input
+                            type="text"
+                            id="inc-amount"
+                            placeholder="0.00"
+                            inputmode="decimal"
+                            autocomplete="off"
+                            required
+                            autofocus
+                        >
                     </div>
                 </div>
 
+                <!-- Fecha + Destino -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="field">
                         <label>Fecha</label>
@@ -47,29 +57,49 @@
                     </div>
                 </div>
 
+                <!-- Aviso Efectivo: visible cuando método = Cash -->
+                <div id="cash-notice" class="cash-notice" style="display: flex;">
+                    <span class="cash-notice-icon">💵</span>
+                    <div>
+                        <div class="cash-notice-title">Se acreditará en Efectivo</div>
+                        <div class="cash-notice-sub" id="cash-card-name">Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- Selector cuenta bancaria: visible cuando método = Debit -->
                 <div id="card-field" class="field" style="display: none;">
-                    <label>Seleccionar Cuenta / Tarjeta</label>
+                    <label>Cuenta de destino</label>
                     <select id="inc-card">
                         <option value="">Selecciona cuenta...</option>
                     </select>
-                    <span id="card-error" style="display:none; color: var(--rust); font-size: 0.7rem; margin-top: 0.3rem;">
-                        * Por favor, selecciona una cuenta de destino.
+                    <span id="card-error" style="display:none; color:#c05c3a; font-size:0.72rem; margin-top:0.4rem;">
+                        * Selecciona una cuenta de destino.
                     </span>
                 </div>
 
+                <!-- Categoría -->
                 <div class="field">
-                    <label>Categoría de Ingreso</label>
+                    <label>Categoría de ingreso</label>
                     <select id="inc-cat" required>
-                        <option value="">Cargando categorías...</option>
+                        <option value="">Cargando...</option>
                     </select>
                 </div>
 
+                <!-- Nota -->
                 <div class="field">
-                    <label>Descripción / Nota</label>
-                    <textarea id="inc-desc" rows="3" placeholder="Opcional..."></textarea>
+                    <label>
+                        Descripción / Nota
+                        <span style="font-size:0.65rem;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;">(opcional)</span>
+                    </label>
+                    <textarea
+                        id="inc-desc"
+                        rows="3"
+                        placeholder="Ej: Sueldo quincena, venta de laptop..."
+                    ></textarea>
                 </div>
 
                 <button type="submit" class="btn-save">Registrar Ingreso</button>
+
             </form>
         </div>
     </div>

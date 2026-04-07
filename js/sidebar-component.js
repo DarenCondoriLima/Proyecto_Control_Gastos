@@ -10,6 +10,7 @@ import { supabase } from './supabase.js';
         dashboard: 'dashboard.html',
         nuevoGasto: 'nuevoGasto.html',
         nuevoIngreso: 'nuevoIngreso.html',
+        transferencia: 'transferencia.html',
         categorias: 'categoriasYSubCategorias.html',
         metodosPago: 'metodosPago.html',
         gestionTarjetas: 'gestionTarjetas.html',
@@ -47,6 +48,7 @@ import { supabase } from './supabase.js';
     <ul class="sb-nav">
         <li><a href="${links.nuevoGasto}" class="${isActive(links.nuevoGasto)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 4v12M4 10h12" stroke-linecap="round"/></svg> Nuevo Gasto</a></li>
         <li><a href="${links.nuevoIngreso}" class="${isActive(links.nuevoIngreso)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10h12M10 14l4-4-4-4" stroke-linecap="round" stroke-linejoin="round"/></svg> Nuevo Ingreso</a></li>
+        <li><a href="${links.transferencia}" class="${isActive(links.transferencia)}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 7h10M11 4l4 3-4 3" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 13H5M9 10l-4 3 4 3" stroke-linecap="round" stroke-linejoin="round"/></svg> Transferencias</a></li>
     </ul>
 
     <p class="sb-section-label">Gestión</p>

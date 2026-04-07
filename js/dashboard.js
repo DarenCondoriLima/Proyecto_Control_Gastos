@@ -180,23 +180,22 @@ async function fetchExpenses(userId, filters, dateRange) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 6. FETCH INGRESOS
-//    incomes: no tiene deleted_inc, sí tiene id_category
+// 6. FETCH INGRESOS — Schema V2: tabla monthly_incomes
+//    Columnas: id_income, amount_income, date_income, notes_income, id_card
+//    (ya no tiene date_inc, amount_inc, description_inc ni payment_method)
 // ─────────────────────────────────────────────────────────────
 async function fetchIncomes(userId, filters, dateRange) {
-    let q = supabase.from('incomes')
-        .select('*, categories(name_cat)')
+    let q = supabase.from('monthly_incomes')
+        .select('id_income, amount_income, date_income, notes_income, id_card, cards(name_card)')
         .eq('id_user', userId);
 
-    if (dateRange.from) q = q.gte('date_inc', dateRange.from);
-    if (dateRange.to)   q = q.lte('date_inc', dateRange.to);
-    // Método de pago en incomes: solo Cash / Debit
-    if (filters.method && ['Cash','Debit'].includes(filters.method)) {
-        q = q.eq('payment_method', filters.method);
-    }
+    // date_income es la columna de fecha en schema V2
+    if (dateRange.from) q = q.gte('date_income', dateRange.from);
+    if (dateRange.to)   q = q.lte('date_income', dateRange.to);
+    // monthly_incomes no tiene payment_method, ignorar ese filtro
 
-    const { data, error } = await q.order('date_inc', { ascending: false });
-    if (error) console.error('[incomes]', error.message);
+    const { data, error } = await q.order('date_income', { ascending: false });
+    if (error) console.error('[monthly_incomes]', error.message);
     return data || [];
 }
 
@@ -232,22 +231,49 @@ async function loadDashboardData(userId) {
 
     const dateRange = buildDateRange(filters);
 
-    const [expenses, incomes, debtsRes, budgets] = await Promise.all([
+    const [expenses, incomes, debtsRes, budgets, cardsRes] = await Promise.all([
         filters.type !== 'income'   ? fetchExpenses(userId, filters, dateRange) : [],
         filters.type !== 'expense'  ? fetchIncomes(userId, filters, dateRange)  : [],
         supabase.from('debts').select('amount_debt, amount_paid')
             .eq('id_user', userId).eq('deleted_debt', false).neq('status_debt', 'Paid'),
-        fetchBudgets(userId, filters.month, filters.year)
+        fetchBudgets(userId, filters.month, filters.year),
+        // Traer saldos reales de cuentas — separado por tipo
+        supabase.from('cards')
+            .select('id_card, name_card, type_card, current_balance, limit_card')
+            .eq('id_user', userId)
+            .eq('deleted_card', false)
+            .order('type_card', { ascending: true })
     ]);
 
     const debts = debtsRes.data || [];
+    const cards = cardsRes.data || [];
 
     // ── KPIs ────────────────────────────────────────────────
-    const totalExp  = expenses.reduce((s, e) => s + parseFloat(e.amount_exp),  0);
-    const totalInc  = incomes.reduce( (s, i) => s + parseFloat(i.amount_inc),  0);
+    const totalExp  = expenses.reduce((s, e) => s + parseFloat(e.amount_exp),    0);
+    const totalInc  = incomes.reduce( (s, i) => s + parseFloat(i.amount_income), 0); // V2: amount_income
     const totalDebt = debts.reduce(   (s, d) => s + parseFloat(d.amount_debt) - parseFloat(d.amount_paid), 0);
 
-    // Cuotas: usa installment_amt (columna real) con fallback a división
+    // ── SEPARACIÓN CRÍTICA: Dinero Real vs Deuda Tarjeta de Crédito ──
+    //
+    // Gastos que SÍ salen del bolsillo (Cash / Debit):
+    const expRealMoney = expenses.filter(e => e.payment_method === 'Cash' || e.payment_method === 'Debit');
+    const totalExpReal = expRealMoney.reduce((s, e) => s + parseFloat(e.amount_exp), 0);
+    //
+    // Gastos que son deuda de tarjeta de crédito (NO restan del dinero en cuentas):
+    const expCredit    = expenses.filter(e => e.payment_method === 'Credit');
+    const totalExpCredit = expCredit.reduce((s, e) => s + parseFloat(e.amount_exp), 0);
+    //
+    // Saldo neto real = ingresos del periodo - gastos reales (cash/débito) del periodo
+    const netRealPeriod = totalInc - totalExpReal;
+    //
+    // Patrimonio real = suma de saldos en cuentas Debit + Cash (dinero que tienes HOY)
+    const realMoneyCards = cards.filter(c => c.type_card === 'Debit' || c.type_card === 'Cash');
+    const creditCards    = cards.filter(c => c.type_card === 'Credit');
+    const totalRealMoney = realMoneyCards.reduce((s, c) => s + parseFloat(c.current_balance || 0), 0);
+    // Deuda total en tarjetas de crédito (current_balance en crédito = deuda acumulada)
+    const totalCreditDebt = creditCards.reduce((s, c) => s + Math.max(0, parseFloat(c.current_balance || 0)), 0);
+
+    // Cuotas del periodo
     const gastosCuota = expenses.filter(e => parseInt(e.installments) > 1);
     const cuotasMes   = gastosCuota.reduce((s, e) => {
         const amt = e.installment_amt != null
@@ -256,7 +282,18 @@ async function loadDashboardData(userId) {
         return s + amt;
     }, 0);
 
-    updateKPIs(totalExp, totalInc, totalDebt, cuotasMes, expenses.length, incomes.length, gastosCuota.length);
+    updateKPIs({
+        totalExp, totalInc, totalExpReal, totalExpCredit,
+        netRealPeriod, totalRealMoney, totalCreditDebt,
+        totalDebt, cuotasMes,
+        expCount: expenses.length, incCount: incomes.length, quotCount: gastosCuota.length
+    });
+
+    renderCardsPanel(realMoneyCards, creditCards);
+
+    // Mostrar aviso si hay gastos de crédito en el periodo
+    const noticeEl = document.getElementById('credit-notice');
+    if (noticeEl) noticeEl.style.display = totalExpCredit > 0 ? 'block' : 'none';
 
     // ── Renderizado ─────────────────────────────────────────
     renderTable(expenses, incomes);
@@ -269,34 +306,109 @@ async function loadDashboardData(userId) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 9. KPIs
+// 9. KPIs — con separación correcta crédito vs dinero real
 // ─────────────────────────────────────────────────────────────
-function updateKPIs(exp, inc, debt, cuotas, expCount, incCount, quotCount) {
-    const fmt = n => n.toLocaleString('es-PE', { minimumFractionDigits: 2 });
-    const net = inc - exp;
+function updateKPIs({ totalExp, totalInc, totalExpReal, totalExpCredit,
+                      netRealPeriod, totalRealMoney, totalCreditDebt,
+                      totalDebt, cuotasMes,
+                      expCount, incCount, quotCount }) {
+    const fmt = n => Math.abs(n).toLocaleString('es-PE', { minimumFractionDigits: 2 });
 
-    document.getElementById('total-exp-display').innerText         = `S/ ${fmt(exp)}`;
-    document.getElementById('total-inc-display').innerText         = `S/ ${fmt(inc)}`;
-    document.getElementById('card-installments-display').innerText = `S/ ${fmt(cuotas)}`;
-    document.getElementById('debt-total-display').innerText        = `S/ ${fmt(debt)}`;
-    document.getElementById('exp-count').innerText                 = `${expCount} registros`;
-    document.getElementById('inc-count').innerText                 = `${incCount} registros`;
-    document.getElementById('quot-count').innerText                = `${quotCount} pagos en cuotas`;
-
+    // KPI 1 — Flujo de Caja del periodo (ingresos - gastos reales cash/débito)
     const netEl = document.getElementById('net-balance-display');
-    netEl.innerText   = `S/ ${fmt(net)}`;
-    netEl.style.color = net < 0 ? 'var(--rust)' : (net > 0 ? 'var(--sage)' : 'var(--ink)');
-
+    netEl.innerText   = `S/ ${fmt(netRealPeriod)}`;
+    netEl.style.color = netRealPeriod < 0 ? 'var(--rust)' : netRealPeriod > 0 ? 'var(--sage)' : 'var(--ink)';
     const trendEl = document.getElementById('net-trend');
-    if (exp > 0) {
-        const pct = ((inc - exp) / exp * 100).toFixed(1);
-        trendEl.innerText = net >= 0
-            ? `Ahorro del ${pct}% sobre gastos`
-            : `Déficit del ${Math.abs(pct)}% sobre ingresos`;
-        trendEl.style.color = net >= 0 ? 'var(--sage)' : 'var(--rust)';
+    if (totalExpReal > 0) {
+        const pct = ((totalInc - totalExpReal) / totalExpReal * 100).toFixed(1);
+        trendEl.innerText = netRealPeriod >= 0
+            ? `Ahorro del ${pct}% sobre gastos reales`
+            : `Déficit del ${Math.abs(pct)}% sobre gastos reales`;
+        trendEl.style.color = netRealPeriod >= 0 ? 'var(--sage)' : 'var(--rust)';
     } else {
-        trendEl.innerText = '—';
+        trendEl.innerText = 'Solo ingresos registrados';
+        trendEl.style.color = 'var(--sage)';
     }
+
+    // KPI 2 — Total Ingresos del periodo
+    document.getElementById('total-inc-display').innerText = `S/ ${fmt(totalInc)}`;
+    document.getElementById('inc-count').innerText         = `${incCount} registro${incCount !== 1 ? 's' : ''}`;
+
+    // KPI 3 — Total Gastos del periodo (todos: real + crédito)
+    document.getElementById('total-exp-display').innerText = `S/ ${fmt(totalExp)}`;
+    document.getElementById('exp-count').innerText =
+        `S/ ${fmt(totalExpReal)} real · S/ ${fmt(totalExpCredit)} crédito`;
+
+    // KPI 4 — Dinero real disponible HOY (suma saldos Debit+Cash)
+    const realMoneyEl = document.getElementById('card-installments-display');
+    if (realMoneyEl) {
+        realMoneyEl.innerText   = `S/ ${fmt(totalRealMoney)}`;
+        realMoneyEl.style.color = totalRealMoney >= 0 ? 'var(--gold)' : 'var(--rust)';
+    }
+    const quotCountEl = document.getElementById('quot-count');
+    if (quotCountEl) quotCountEl.innerText = 'Saldo en cuentas Déb/Efec';
+
+    // KPI 5 — Deuda en tarjetas de crédito HOY
+    document.getElementById('debt-total-display').innerText    = `S/ ${fmt(totalCreditDebt)}`;
+    document.getElementById('debt-total-display').style.color  = totalCreditDebt > 0 ? 'var(--blue)' : 'var(--sage)';
+}
+
+// ─────────────────────────────────────────────────────────────
+// 9b. PANEL DE TARJETAS (saldos por cuenta)
+// ─────────────────────────────────────────────────────────────
+function renderCardsPanel(realCards, creditCards) {
+    const container = document.getElementById('cards-panel-body');
+    if (!container) return;
+
+    const fmt = n => parseFloat(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 });
+
+    let html = '';
+
+    if (realCards.length > 0) {
+        html += `<div class="cp-section-label">💵 Dinero disponible</div>`;
+        realCards.forEach(c => {
+            const bal = parseFloat(c.current_balance || 0);
+            html += `
+            <div class="cp-card-row">
+                <div class="cp-card-info">
+                    <span class="cp-card-name">${escHtml(c.name_card)}</span>
+                    <span class="cp-card-type">${c.type_card === 'Cash' ? 'Efectivo' : 'Débito'}</span>
+                </div>
+                <span class="cp-card-bal" style="color:${bal >= 0 ? 'var(--sage)' : 'var(--rust)'};">S/ ${fmt(bal)}</span>
+            </div>`;
+        });
+    }
+
+    if (creditCards.length > 0) {
+        html += `<div class="cp-section-label" style="margin-top:0.75rem;">💳 Deuda en crédito</div>`;
+        creditCards.forEach(c => {
+            const debt = Math.max(0, parseFloat(c.current_balance || 0));
+            const limit = parseFloat(c.limit_card || 0);
+            const pct   = limit > 0 ? Math.min(100, (debt / limit) * 100) : 0;
+            const color = pct > 80 ? 'var(--rust)' : pct > 50 ? 'var(--gold)' : 'var(--blue)';
+            html += `
+            <div class="cp-card-row">
+                <div class="cp-card-info">
+                    <span class="cp-card-name">${escHtml(c.name_card)}</span>
+                    ${limit > 0 ? `<span class="cp-card-type">Límite S/ ${fmt(limit)}</span>` : `<span class="cp-card-type">Crédito</span>`}
+                </div>
+                <div style="text-align:right;">
+                    <span class="cp-card-bal" style="color:${debt > 0 ? 'var(--rust)' : 'var(--sage)'};">S/ ${fmt(debt)}</span>
+                    ${limit > 0 ? `<div class="cp-mini-bar"><div class="cp-mini-bar-fill" style="width:${pct}%;background:${color};"></div></div>` : ''}
+                </div>
+            </div>`;
+        });
+    }
+
+    if (html === '') {
+        html = '<div style="color:var(--muted);font-size:0.75rem;text-align:center;padding:1rem;">Sin cuentas registradas</div>';
+    }
+
+    container.innerHTML = html;
+}
+
+function escHtml(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -321,14 +433,14 @@ function renderTable(expenses, incomes) {
             raw: e   // objeto completo para el drawer
         })),
         ...incomes.map(i => ({
-            id:     i.id_inc,
-            date:   i.date_inc,
+            id:     i.id_income,                    // V2: id_income
+            date:   i.date_income,                  // V2: date_income
             type:   'income',
-            cat:    i.categories?.name_cat || 'Ingreso',
+            cat:    i.cards?.name_card || 'Ingreso', // V2: sin category, pero tiene id_card
             subcat: '',
-            desc:   i.description_inc,
-            amount: parseFloat(i.amount_inc),
-            method: i.payment_method,
+            desc:   i.notes_income,                 // V2: notes_income
+            amount: parseFloat(i.amount_income),    // V2: amount_income
+            method: null,                           // V2: sin payment_method
             cuotas: null,
             raw: i
         }))
@@ -396,16 +508,15 @@ function renderTable(expenses, incomes) {
 function renderBarChart(expenses, incomes, dateRange, filters) {
     if (barChart) barChart.destroy();
 
-    // Agrupar por semana si hay un mes, por mes si hay año completo / trimestre
-    let labels = [], incData = [], expData = [];
-    const groupByMonth = !filters.month; // si no hay mes específico, agrupa por mes
+    let labels = [], incData = [];
+    const hasMonth = !!filters.month;
 
-    if (groupByMonth) {
-        // Agrupar por mes (YYYY-MM)
+    if (!hasMonth) {
+        // Sin mes específico → agrupar por mes (año / trimestre)
         const incMap = {}, expMap = {};
         incomes.forEach(i => {
-            const key = i.date_inc?.substring(0, 7);
-            if (key) incMap[key] = (incMap[key] || 0) + parseFloat(i.amount_inc);
+            const key = i.date_income?.substring(0, 7); // V2: date_income
+            if (key) incMap[key] = (incMap[key] || 0) + parseFloat(i.amount_income); // V2: amount_income
         });
         expenses.forEach(e => {
             const key = e.date_exp?.substring(0, 7);
@@ -415,28 +526,52 @@ function renderBarChart(expenses, incomes, dateRange, filters) {
         const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         labels  = allKeys.map(k => { const [y, m] = k.split('-'); return `${monthNames[parseInt(m)-1]} ${y}`; });
         incData = allKeys.map(k => incMap[k] || 0);
-        expData = allKeys.map(k => expMap[k] || 0);
         document.getElementById('bar-chart-label').innerText = 'Por mes';
     } else {
-        // Agrupar por día dentro del mes
-        const incMap = {}, expMap = {};
+        // Con mes específico → agrupar por semana (Sem 1 = días 1-7, etc.)
+        const getWeek = (dateStr) => {
+            const day = parseInt(dateStr.substring(8, 10));
+            if (day <= 7)  return 'Sem 1';
+            if (day <= 14) return 'Sem 2';
+            if (day <= 21) return 'Sem 3';
+            return 'Sem 4+';
+        };
+        const weekOrder = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4+'];
+        const incMap = {};
         incomes.forEach(i => {
-            if (i.date_inc) incMap[i.date_inc] = (incMap[i.date_inc] || 0) + parseFloat(i.amount_inc);
+            if (i.date_income) {                    // V2: date_income
+                const k = getWeek(i.date_income);
+                incMap[k] = (incMap[k] || 0) + parseFloat(i.amount_income); // V2: amount_income
+            }
         });
-        expenses.forEach(e => {
-            if (e.date_exp) expMap[e.date_exp] = (expMap[e.date_exp] || 0) + parseFloat(e.amount_exp);
-        });
-        const allKeys = Array.from(new Set([...Object.keys(incMap), ...Object.keys(expMap)])).sort();
-        labels  = allKeys.map(k => k.substring(5)); // MM-DD
-        incData = allKeys.map(k => incMap[k] || 0);
-        expData = allKeys.map(k => expMap[k] || 0);
-        document.getElementById('bar-chart-label').innerText = 'Por día';
+        labels  = weekOrder;
+        incData = weekOrder.map(k => incMap[k] || 0);
+        document.getElementById('bar-chart-label').innerText = 'Por semana';
     }
 
     if (labels.length === 0) {
         document.getElementById('bar-chart-label').innerText = 'Sin datos';
         return;
     }
+
+    // Calcular datos por grupo para cash/debit y crédito separados
+    const expRealMap  = {};
+    const expCreditMap = {};
+    expenses.forEach(e => {
+        let k;
+        if (!hasMonth) {
+            k = e.date_exp?.substring(0, 7);
+        } else {
+            const d = parseInt(e.date_exp.substring(8, 10));
+            k = d <= 7 ? 'Sem 1' : d <= 14 ? 'Sem 2' : d <= 21 ? 'Sem 3' : 'Sem 4+';
+        }
+        if (!k) return;
+        if (e.payment_method === 'Credit') {
+            expCreditMap[k] = (expCreditMap[k] || 0) + parseFloat(e.amount_exp);
+        } else {
+            expRealMap[k]   = (expRealMap[k]   || 0) + parseFloat(e.amount_exp);
+        }
+    });
 
     barChart = new Chart(document.getElementById('barChart'), {
         type: 'bar',
@@ -453,10 +588,19 @@ function renderBarChart(expenses, incomes, dateRange, filters) {
                     borderSkipped: false
                 },
                 {
-                    label: 'Gastos',
-                    data: expData,
+                    label: 'Gastos (Cash/Déb)',
+                    data: labels.map(l => expRealMap[l] || 0),
                     backgroundColor: 'rgba(192,92,58,0.75)',
                     borderColor: '#c05c3a',
+                    borderWidth: 1.5,
+                    borderRadius: 5,
+                    borderSkipped: false
+                },
+                {
+                    label: 'Gastos (Crédito)',
+                    data: labels.map(l => expCreditMap[l] || 0),
+                    backgroundColor: 'rgba(201,168,76,0.65)',
+                    borderColor: '#c9a84c',
                     borderWidth: 1.5,
                     borderRadius: 5,
                     borderSkipped: false
@@ -479,7 +623,7 @@ function renderBarChart(expenses, incomes, dateRange, filters) {
                 }
             },
             scales: {
-                x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 10 } } },
+                x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 10 } }, stacked: false },
                 y: {
                     grid: { color: 'rgba(15,14,13,0.05)' },
                     ticks: {
@@ -758,7 +902,7 @@ async function openDrawer(raw, type) {
     const overlay = document.getElementById('drawer-overlay');
     const title   = document.getElementById('drawer-title');
 
-    document.getElementById('d-id').value   = type === 'expense' ? raw.id_exp   : raw.id_inc;
+    document.getElementById('d-id').value   = type === 'expense' ? raw.id_exp : raw.id_income; // V2: id_income
     document.getElementById('d-type').value = type;
 
     if (type === 'expense') {
@@ -790,10 +934,11 @@ async function openDrawer(raw, type) {
 
     } else {
         title.textContent = 'Editar Ingreso';
-        document.getElementById('d-amount').value  = parseFloat(raw.amount_inc).toFixed(2);
-        document.getElementById('d-date').value    = raw.date_inc;
-        document.getElementById('d-desc').value    = raw.description_inc || '';
-        document.getElementById('d-method').value  = raw.payment_method || 'Cash';
+        // V2: monthly_incomes usa amount_income, date_income, notes_income
+        document.getElementById('d-amount').value  = parseFloat(raw.amount_income || 0).toFixed(2);
+        document.getElementById('d-date').value    = raw.date_income   || '';
+        document.getElementById('d-desc').value    = raw.notes_income  || '';
+        document.getElementById('d-method').value  = 'Cash'; // monthly_incomes no tiene payment_method
 
         // Para ingresos no hay cuotas ni categoría de gastos
         document.getElementById('d-card-row').style.display  = 'none';
@@ -892,14 +1037,15 @@ async function saveDrawer() {
             if (error) throw error;
 
         } else {
+            // V2: monthly_incomes — columnas: amount_income, date_income, notes_income
             const updates = {
-                amount_inc:    parseFloat(document.getElementById('d-amount').value),
-                date_inc:      document.getElementById('d-date').value,
-                description_inc: document.getElementById('d-desc').value.trim() || null,
-                payment_method: document.getElementById('d-method').value
+                amount_income: parseFloat(document.getElementById('d-amount').value),
+                date_income:   document.getElementById('d-date').value,
+                notes_income:  document.getElementById('d-desc').value.trim() || null
+                // payment_method no existe en monthly_incomes (V2)
             };
 
-            const { error } = await supabase.from('incomes').update(updates).eq('id_inc', id);
+            const { error } = await supabase.from('monthly_incomes').update(updates).eq('id_income', id);
             if (error) throw error;
         }
 
@@ -929,8 +1075,8 @@ async function deleteTransaction(id, type) {
                 .update({ deleted_exp: true, updated_at: new Date().toISOString() })
                 .eq('id_exp', id));
         } else {
-            // incomes no tiene deleted — delete real
-            ({ error } = await supabase.from('incomes').delete().eq('id_inc', id));
+            // V2: monthly_incomes — PK es id_income, no hay soft delete
+            ({ error } = await supabase.from('monthly_incomes').delete().eq('id_income', id));
         }
 
         if (error) throw error;

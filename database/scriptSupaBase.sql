@@ -248,3 +248,31 @@ FOR SELECT
 USING (auth.uid() = id_user);
 
 ALTER TABLE public.credit_card_payments ADD COLUMN IF NOT EXISTS notes TEXT;
+
+-- Agregar columnas para identificar el ciclo de facturación al que pertenece el pago
+ALTER TABLE public.credit_card_payments 
+ADD COLUMN IF NOT EXISTS month_cycle SMALLINT,
+ADD COLUMN IF NOT EXISTS year_cycle SMALLINT;
+
+-- Opcional: Agregar una columna de tipo de pago para distinguir abonos de pagos totales
+ALTER TABLE public.credit_card_payments 
+ADD COLUMN IF NOT EXISTS payment_type TEXT CHECK (payment_type IN ('abono', 'total')) DEFAULT 'abono';
+
+-- Comentario para documentar:
+COMMENT ON COLUMN public.credit_card_payments.month_cycle IS 'Mes del ciclo de facturación al que se atribuye el pago (1-12)';
+
+-- Agregar columna para definir la atribución del pago
+ALTER TABLE public.credit_card_payments 
+ADD COLUMN IF NOT EXISTS target_cycle TEXT 
+CHECK (target_cycle IN ('current', 'previous')) DEFAULT 'previous';
+
+-- Comentario para recordar la lógica:
+-- 'current': El pago se aplica a los gastos realizados HOY (abono anticipado).
+-- 'previous': El pago es para el recibo que acaba de cerrar (pago de estado de cuenta).
+
+-- Agregar la columna de saldo actual a la tabla de tarjetas
+ALTER TABLE public.Cards 
+ADD COLUMN IF NOT EXISTS CURRENT_BALANCE DECIMAL(15,2) DEFAULT 0.00;
+
+-- Comentario para documentación
+COMMENT ON COLUMN public.Cards.CURRENT_BALANCE IS 'Saldo real disponible (Débito/Cash) o Deuda acumulada (Crédito)';

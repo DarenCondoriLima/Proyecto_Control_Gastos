@@ -18,9 +18,9 @@ async function init() {
 async function renderCards(userId) {
     const container = document.getElementById('cards-container');
     const { data: cards, error } = await supabase
-        .from('cards') // Tabla en minúsculas
+        .from('cards') 
         .select('*')
-        .eq('id_user', userId) // Columna en minúsculas
+        .eq('id_user', userId) 
         .eq('deleted_card', false);
 
     if (error) {
@@ -28,14 +28,33 @@ async function renderCards(userId) {
         return;
     }
 
-    container.innerHTML = cards.map(card => `
+    container.innerHTML = cards.map(card => {
+        const balance = parseFloat(card.current_balance || 0);
+        const isCredit = card.type_card === 'Credit';
+        
+        // Determinamos el color del saldo: rojo si es deuda (crédito) o negativo, verde si es ahorro
+        const balanceColor = isCredit ? 'var(--rust)' : (balance >= 0 ? 'var(--sage)' : 'var(--rust)');
+        const balanceLabel = isCredit ? 'Deuda Actual' : 'Saldo Disponible';
+
+        return `
         <div class="bank-card">
-            <div class="card-type">${card.type_card === 'Credit' ? 'Tarjeta de Crédito' : 'Cuenta / Débito'}</div>
+            <div class="card-type">${isCredit ? 'Tarjeta de Crédito' : 'Cuenta / Débito'}</div>
             <div class="card-name">${card.name_card}</div>
-            <div style="color: var(--muted); font-size: 0.8rem;">
-                Moneda: ${card.currency} 
-                ${card.type_card === 'Credit' ? `| Límite: S/ ${card.limit_card}` : ''}
+            
+            <div style="margin: 1rem 0; padding: 0.5rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);">
+                <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em;">
+                    ${balanceLabel}
+                </div>
+                <div style="font-family: 'Fraunces', serif; font-size: 1.4rem; color: ${balanceColor}; font-weight: 600;">
+                    S/ ${balance.toFixed(2)}
+                </div>
             </div>
+
+            <div style="color: var(--muted); font-size: 0.75rem;">
+                Moneda: ${card.currency} 
+                ${isCredit ? `| Límite: S/ ${card.limit_card}` : ''}
+            </div>
+
             <div class="card-footer">
                 <span style="font-size: 0.7rem; color: var(--gold); font-weight: 600;">ACTIVA</span>
                 <div class="card-actions">
@@ -48,7 +67,7 @@ async function renderCards(userId) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 // Abrir modal
