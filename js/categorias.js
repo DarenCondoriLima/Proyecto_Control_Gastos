@@ -1,6 +1,15 @@
 import { supabase } from './supabase.js';
 
 const palette = ['#c9a84c','#7a8c70','#c05c3a','#5e7a8c','#8c6b5e','#a8a87a'];
+const protectedCategoryNames = new Set(['Pago Tarjeta', 'Préstamos Realizados']);
+
+function isProtectedCategory(name) {
+    return protectedCategoryNames.has(name);
+}
+
+function normalizeName(name) {
+    return name.trim().toLowerCase();
+}
 
 async function init() {
     const { data: { user }, error } = await supabase.auth.getUser();
@@ -53,8 +62,8 @@ async function renderCategories(userId) {
     empty.style.display = 'none';
 
     // Separar datos
-    const gastoCats = cats.filter(c => c.type_cat === 'gasto');
-    const ingresoCats = cats.filter(c => c.type_cat === 'ingreso');
+    const gastoCats = cats.filter(c => c.type_cat === 'gasto' && !isProtectedCategory(c.name_cat));
+    const ingresoCats = cats.filter(c => c.type_cat === 'ingreso' && !isProtectedCategory(c.name_cat));
 
     // 1. Renderizar CARDS de Gastos
     grid.innerHTML = gastoCats.map((cat, i) => {
@@ -153,8 +162,32 @@ document.getElementById('form-category').addEventListener('submit', async (e) =>
     e.preventDefault();
     const { data: { user } } = await supabase.auth.getUser();
     const id = document.getElementById('edit-cat-id').value;
-    const name = document.getElementById('cat-name-input').value;
+    const rawName = document.getElementById('cat-name-input').value;
+    const name = rawName.trim();
     const type = document.getElementById('cat-type-input').value;
+
+    const { data: existingCats, error: existingCatsError } = await supabase
+        .from('categories')
+        .select('id_cat, name_cat')
+        .eq('id_user', user.id)
+        .eq('deleted_cat', false);
+
+    if (existingCatsError) {
+        alert('No se pudo validar el nombre de la categoría. Inténtalo de nuevo.');
+        return;
+    }
+
+    const normalizedName = normalizeName(name);
+    const isDuplicateCat = existingCats.some(cat => {
+        const sameName = normalizeName(cat.name_cat) === normalizedName;
+        const sameId = id && String(cat.id_cat) === String(id);
+        return sameName && !sameId;
+    });
+
+    if (isDuplicateCat) {
+        alert('Ya existe una categoría con ese nombre.');
+        return;
+    }
 
     if (id) {
         await supabase.from('categories').update({ name_cat: name }).eq('id_cat', id);
@@ -197,7 +230,32 @@ document.getElementById('form-subcategory').addEventListener('submit', async (e)
     const { data: { user } } = await supabase.auth.getUser();
     const subId = document.getElementById('edit-sub-id').value;
     const catId = document.getElementById('parent-cat-id').value;
-    const name = document.getElementById('sub-name-input').value;
+    const rawName = document.getElementById('sub-name-input').value;
+    const name = rawName.trim();
+
+    const { data: existingSubs, error: existingSubsError } = await supabase
+        .from('subcategories')
+        .select('id_subcat, name_subcat')
+        .eq('id_category', catId)
+        .eq('id_user', user.id)
+        .eq('deleted_subcat', false);
+
+    if (existingSubsError) {
+        alert('No se pudo validar el nombre de la subcategoría. Inténtalo de nuevo.');
+        return;
+    }
+
+    const normalizedName = normalizeName(name);
+    const isDuplicateSub = existingSubs.some(sub => {
+        const sameName = normalizeName(sub.name_subcat) === normalizedName;
+        const sameId = subId && String(sub.id_subcat) === String(subId);
+        return sameName && !sameId;
+    });
+
+    if (isDuplicateSub) {
+        alert('Ya existe una subcategoría con ese nombre en esta categoría.');
+        return;
+    }
 
     if (subId) {
         await supabase.from('subcategories').update({ name_subcat: name }).eq('id_subcat', subId);

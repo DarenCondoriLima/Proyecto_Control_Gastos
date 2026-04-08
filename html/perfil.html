@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil — ControlGastos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/sidebar.css">
+    <style>
+/* ══════════════════════════════════════════════════
+   ROOT & RESET
+══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --ink:       #0f0e0d;
+    --paper:     #f5f0e8;
+    --cream:     #ede8dc;
+    --cream2:    #e4ddd0;
+    --gold:      #c9a84c;
+    --gold-soft: rgba(201,168,76,0.12);
+    --gold-line: rgba(201,168,76,0.3);
+    --sage:      #7a8c70;
+    --sage-soft: rgba(122,140,112,0.13);
+    --rust:      #c05c3a;
+    --rust-soft: rgba(192,92,58,0.10);
+    --blue:      #4a7a9b;
+    --blue-soft: rgba(74,122,155,0.11);
+    --muted:     #8a8070;
+    --line:      rgba(15,14,13,0.08);
+    --shadow:    0 2px 16px rgba(15,14,13,0.06);
+    --shadow-md: 0 8px 32px rgba(15,14,13,0.11);
+    --shadow-lg: 0 20px 60px rgba(15,14,13,0.16);
+    --sidebar-w: 220px;
+    --radius:    18px;
+    --radius-sm: 12px;
+}
+
+html, body { min-height: 100vh; }
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+}
+
+/* ══════════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════════ */
+.main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════════
+   HERO BAND — franja superior con gradiente
+══════════════════════════════════════════════════ */
+.profile-hero {
+    background: linear-gradient(160deg, var(--ink) 0%, #1e1a17 55%, #2a2218 100%);
+    padding: 3rem 3rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Textura de fondo sutil */
+.profile-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 20% 50%, rgba(201,168,76,0.06) 0%, transparent 60%),
+                      radial-gradient(circle at 80% 20%, rgba(122,140,112,0.05) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* Decoración geométrica */
+.hero-deco {
+    position: absolute; top: -40px; right: -40px;
+    width: 300px; height: 300px;
+    border: 1px solid rgba(201,168,76,0.08);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.hero-deco::after {
+    content: ''; position: absolute; inset: 30px;
+    border: 1px solid rgba(201,168,76,0.05);
+    border-radius: 50%;
+}
+
+.hero-inner {
+    position: relative; z-index: 1;
+    display: flex; align-items: flex-end; gap: 2.5rem;
+    padding-bottom: 0;
+}
+
+/* Avatar */
+.avatar-wrap {
+    position: relative; flex-shrink: 0;
+    width: 110px; height: 110px;
+    margin-bottom: -30px;
+}
+
+.avatar-ring {
+    position: absolute; inset: -4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold) 0%, transparent 50%, var(--sage) 100%);
+    padding: 3px;
+}
+.avatar-ring-inner {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: var(--ink);
+}
+
+.avatar-img {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    object-fit: cover;
+    width: 100%; height: 100%;
+    border: 3px solid var(--ink);
+}
+
+/* Canvas del avatar generativo */
+#avatar-canvas {
+    position: absolute; inset: 0;
+    border-radius: 50%;
+    width: 100%; height: 100%;
+}
+
+/* Botón de editar foto */
+.avatar-edit-btn {
+    position: absolute; bottom: 2px; right: 2px;
+    width: 28px; height: 28px;
+    background: var(--gold); color: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; transition: transform 0.15s;
+    z-index: 2;
+}
+.avatar-edit-btn:hover { transform: scale(1.12); }
+
+/* Info del usuario */
+.hero-info {
+    padding-bottom: 1.5rem; flex: 1; min-width: 0;
+}
+.hero-role-badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gold);
+    background: rgba(201,168,76,0.12);
+    border: 1px solid rgba(201,168,76,0.25);
+    padding: 0.22rem 0.7rem; border-radius: 20px;
+    margin-bottom: 0.5rem;
+}
+.hero-name {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem; font-weight: 200;
+    color: var(--paper); line-height: 1.1;
+    letter-spacing: -0.01em;
+}
+.hero-name strong { font-weight: 500; font-style: italic; }
+.hero-username {
+    font-size: 0.78rem; color: rgba(245,240,232,0.45);
+    margin-top: 0.3rem; font-weight: 400;
+}
+.hero-email {
+    font-size: 0.75rem; color: rgba(245,240,232,0.35);
+    margin-top: 0.15rem;
+}
+
+/* Botones de acción del hero */
+.hero-actions {
+    padding-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;
+}
+.btn-settings {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    padding: 0.55rem 1.1rem;
+    background: rgba(245,240,232,0.08);
+    border: 1px solid rgba(245,240,232,0.15);
+    border-radius: var(--radius-sm);
+    color: rgba(245,240,232,0.8);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+}
+.btn-settings:hover {
+    background: rgba(245,240,232,0.14);
+    border-color: rgba(245,240,232,0.25);
+    color: var(--paper);
+}
+.btn-settings.danger { border-color: rgba(192,92,58,0.3); color: rgba(192,92,58,0.8); }
+.btn-settings.danger:hover { background: var(--rust-soft); border-color: var(--rust); color: var(--rust); }
+
+/* Tabs del perfil */
+.profile-tabs {
+    display: flex; gap: 0; padding: 0 3rem;
+    position: relative; z-index: 1;
+}
+.ptab {
+    padding: 0.9rem 1.4rem;
+    font-size: 0.78rem; font-weight: 500;
+    color: rgba(245,240,232,0.45);
+    border: none; background: transparent;
+    cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.ptab:hover { color: rgba(245,240,232,0.7); }
+.ptab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* ══════════════════════════════════════════════════
+   CONTENIDO DEL PERFIL
+══════════════════════════════════════════════════ */
+.profile-body {
+    flex: 1;
+    padding: 2.5rem 3rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* Paneles de contenido */
+.ptab-panel { display: none; }
+.ptab-panel.active { display: contents; }
+
+/* ══════════════════════════════════════════════════
+   SECCIÓN DE INFORMACIÓN
+══════════════════════════════════════════════════ */
+.section-card {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--line); box-shadow: var(--shadow);
+    overflow: hidden;
+    animation: fadeUp 0.3s ease both;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.section-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+}
+.section-title {
+    font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 400;
+}
+.section-action {
+    font-size: 0.72rem; color: var(--blue); cursor: pointer;
+    background: none; border: none; font-family: inherit;
+    font-weight: 500; padding: 0; transition: opacity 0.15s;
+}
+.section-action:hover { opacity: 0.7; }
+
+/* Grid de datos */
+.info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+}
+.info-item {
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+}
+.info-item:nth-child(even) { border-right: none; }
+.info-item:nth-last-child(-n+2) { border-bottom: none; }
+.info-item.full-width {
+    grid-column: 1 / -1; border-right: none;
+}
+.info-label {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted); margin-bottom: 0.3rem;
+}
+.info-value {
+    font-size: 0.88rem; font-weight: 500; color: var(--ink);
+}
+.info-value.muted { color: var(--muted); font-style: italic; font-weight: 400; }
+
+/* ══════════════════════════════════════════════════
+   STATS
+══════════════════════════════════════════════════ */
+.stats-stack {
+    display: flex; flex-direction: column; gap: 1rem;
+}
+
+.stat-card {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--line); box-shadow: var(--shadow);
+    padding: 1.2rem 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    animation: fadeUp 0.3s ease both;
+}
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.10s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.20s; }
+
+.stat-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; flex-shrink: 0;
+}
+.stat-icon.gold   { background: var(--gold-soft); }
+.stat-icon.sage   { background: var(--sage-soft); }
+.stat-icon.rust   { background: var(--rust-soft); }
+.stat-icon.blue   { background: var(--blue-soft); }
+
+.stat-body { flex: 1; }
+.stat-label {
+    font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted);
+}
+.stat-value {
+    font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 300;
+    line-height: 1.2; margin-top: 0.15rem;
+}
+.stat-sub { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+
+/* Barra de membresía */
+.membership-bar {
+    background: white; border-radius: var(--radius);
+    border: 1px solid var(--gold-line);
+    background: linear-gradient(135deg, rgba(201,168,76,0.06) 0%, white 100%);
+    box-shadow: var(--shadow);
+    padding: 1.25rem 1.5rem;
+    animation: fadeUp 0.3s ease both; animation-delay: 0.25s;
+}
+.mb-label {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gold); margin-bottom: 0.4rem;
+}
+.mb-since {
+    font-family: 'Fraunces', serif; font-size: 0.95rem; font-weight: 300;
+    color: var(--ink);
+}
+.mb-days {
+    font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem;
+}
+
+/* ══════════════════════════════════════════════════
+   MODAL BASE
+══════════════════════════════════════════════════ */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15,14,13,0.45);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none; align-items: center; justify-content: center;
+    padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    width: 100%; max-width: 480px;
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+    animation: modalIn 0.28s cubic-bezier(0.32,0.72,0,1) both;
+    overflow: hidden;
+}
+@keyframes modalIn {
+    from { opacity:0; transform: scale(0.94) translateY(10px); }
+    to   { opacity:1; transform: scale(1)    translateY(0); }
+}
+
+.modal-header {
+    padding: 1.4rem 1.6rem 1.1rem;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-shrink: 0;
+}
+.modal-title {
+    font-family: 'Fraunces', serif; font-size: 1.15rem; font-weight: 400;
+}
+.modal-title small {
+    display: block; font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem; color: var(--muted); font-weight: 400;
+    margin-top: 0.2rem;
+}
+.modal-close {
+    width: 30px; height: 30px; border: none;
+    background: var(--cream); border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: all 0.15s; font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.modal-close:hover { background: var(--cream2); color: var(--ink); }
+
+.modal-body {
+    padding: 1.4rem 1.6rem;
+    overflow-y: auto; flex: 1;
+}
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--cream2); border-radius: 4px; }
+
+.modal-footer {
+    padding: 1.1rem 1.6rem;
+    border-top: 1px solid var(--line);
+    display: flex; gap: 0.65rem; flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════
+   CAMPOS DE FORMULARIO (modal)
+══════════════════════════════════════════════════ */
+.mfield {
+    display: flex; flex-direction: column; gap: 0.3rem;
+    margin-bottom: 1rem;
+}
+.mfield:last-child { margin-bottom: 0; }
+.mfield label {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted);
+}
+.mfield input, .mfield select {
+    width: 100%; padding: 0.6rem 0.9rem;
+    border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+    background: var(--paper); font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; color: var(--ink); outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    appearance: none; -webkit-appearance: none;
+}
+.mfield input:focus, .mfield select:focus {
+    border-color: var(--gold); background: white;
+}
+.mfield input[type="password"] { letter-spacing: 0.15em; }
+.mfield-hint {
+    font-size: 0.63rem; color: var(--muted); margin-top: 0.15rem; line-height: 1.4;
+}
+.mfield-error {
+    font-size: 0.63rem; color: var(--rust);
+    display: none; margin-top: 0.15rem;
+}
+
+.field-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+
+/* Separador de sección en modal */
+.msep {
+    font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted);
+    padding: 0.6rem 0 0.4rem; margin-top: 0.5rem;
+    border-top: 1px solid var(--line);
+}
+
+/* Password strength */
+.pwd-strength { margin-top: 0.35rem; }
+.pwd-bar-track {
+    height: 4px; background: var(--cream2); border-radius: 4px; overflow: hidden;
+}
+.pwd-bar-fill {
+    height: 100%; border-radius: 4px; transition: width 0.3s, background 0.3s;
+    width: 0%; background: var(--rust);
+}
+.pwd-label {
+    font-size: 0.62rem; color: var(--muted); margin-top: 0.25rem;
+}
+
+/* ══════════════════════════════════════════════════
+   BOTONES
+══════════════════════════════════════════════════ */
+.btn-primary {
+    flex: 1; padding: 0.65rem;
+    background: var(--ink); color: white;
+    border: none; border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+}
+.btn-primary:hover:not(:disabled) { background: #2a2825; }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary.gold-btn { background: var(--gold); color: var(--ink); }
+.btn-primary.gold-btn:hover:not(:disabled) { filter: brightness(1.06); }
+.btn-primary.danger-btn { background: var(--rust); }
+.btn-primary.danger-btn:hover:not(:disabled) { background: #a84d2e; }
+.btn-secondary {
+    padding: 0.65rem 1.1rem;
+    background: var(--cream); color: var(--muted);
+    border: none; border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+}
+.btn-secondary:hover { background: var(--cream2); }
+
+/* ══════════════════════════════════════════════════
+   MENÚ DE CONFIGURACIONES
+══════════════════════════════════════════════════ */
+.config-menu { display: flex; flex-direction: column; gap: 0.4rem; }
+.config-item {
+    display: flex; align-items: center; gap: 0.9rem;
+    padding: 0.9rem 1rem; border-radius: var(--radius-sm);
+    cursor: pointer; transition: background 0.12s; border: 1.5px solid transparent;
+}
+.config-item:hover { background: var(--paper); border-color: var(--line); }
+.config-item.danger:hover { background: var(--rust-soft); border-color: rgba(192,92,58,0.2); }
+
+.ci-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+}
+.ci-icon.gold  { background: var(--gold-soft); }
+.ci-icon.sage  { background: var(--sage-soft); }
+.ci-icon.blue  { background: var(--blue-soft); }
+.ci-icon.rust  { background: var(--rust-soft); }
+.ci-icon.cream { background: var(--cream); }
+
+.ci-body { flex: 1; }
+.ci-title { font-size: 0.85rem; font-weight: 600; }
+.ci-sub   { font-size: 0.68rem; color: var(--muted); margin-top: 1px; }
+.ci-arrow { color: var(--muted); font-size: 0.8rem; }
+
+.config-sep {
+    height: 1px; background: var(--line); margin: 0.25rem 0;
+}
+
+/* ══════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════ */
+.toast {
+    position: fixed; bottom: 1.8rem; left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--ink); color: white;
+    padding: 0.72rem 1.4rem; border-radius: 40px;
+    font-size: 0.82rem; font-weight: 500;
+    box-shadow: 0 6px 24px rgba(15,14,13,0.2);
+    z-index: 500; opacity: 0; pointer-events: none;
+    transition: all 0.28s ease; white-space: nowrap;
+}
+.toast.show   { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--sage); }
+.toast.error   { background: var(--rust); }
+
+/* ══════════════════════════════════════════════════
+   SKELETON
+══════════════════════════════════════════════════ */
+.skeleton {
+    background: linear-gradient(90deg,var(--cream) 25%,var(--cream2) 50%,var(--cream) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite; border-radius: 6px;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .profile-body { grid-template-columns: 1fr; }
+    .ptab-panel.active { display: block; }
+    .stats-stack { display: grid; grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+    .main { margin-left: 0; }
+    .profile-hero { padding: 2rem 1.5rem 0; }
+    .profile-tabs { padding: 0 1.5rem; }
+    .profile-body { padding: 1.5rem; gap: 1.25rem; }
+    .hero-inner { flex-wrap: wrap; gap: 1.5rem; }
+    .hero-actions { flex-direction: row; flex-wrap: wrap; }
+    .info-grid { grid-template-columns: 1fr; }
+    .info-item { border-right: none !important; }
+    .info-item:nth-last-child(-n+2) { border-bottom: 1px solid var(--line); }
+    .info-item:last-child { border-bottom: none; }
+    .stats-stack { grid-template-columns: 1fr; }
+}
+    </style>
+</head>
+<body>
+
+<div id="sidebar-root"></div>
+<script type="module" src="../js/sidebar-component.js"></script>
+
+<div class="main">
+
+    <!-- ═══ HERO ═══════════════════════════════════════════════ -->
+    <div class="profile-hero">
+        <div class="hero-deco"></div>
+
+        <div class="hero-inner">
+            <!-- Avatar -->
+            <div class="avatar-wrap">
+                <div class="avatar-ring"><div class="avatar-ring-inner"></div></div>
+                <canvas id="avatar-canvas"></canvas>
+                <img id="avatar-img" class="avatar-img" style="display:none;" alt="Foto de perfil">
+                <button class="avatar-edit-btn" id="btn-change-photo" title="Cambiar foto">✎</button>
+            </div>
+
+            <!-- Info -->
+            <div class="hero-info">
+                <div class="hero-role-badge" id="hero-role">⭐ Cargando…</div>
+                <div class="hero-name" id="hero-name">
+                    <span class="skeleton" style="display:inline-block;width:200px;height:32px;border-radius:6px;"></span>
+                </div>
+                <div class="hero-username" id="hero-username">@—</div>
+                <div class="hero-email" id="hero-email">—</div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="hero-actions">
+                <button class="btn-settings" id="btn-open-settings">
+                    ⚙ Configuración
+                </button>
+                <button class="btn-settings danger" id="btn-logout">
+                    ⏻ Cerrar sesión
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="profile-tabs">
+            <button class="ptab active" data-tab="info">Información</button>
+            <button class="ptab" data-tab="activity">Actividad</button>
+        </div>
+    </div>
+
+    <!-- ═══ CUERPO ══════════════════════════════════════════════ -->
+    <div class="profile-body" id="profile-body">
+
+        <!-- ── TAB: INFO ── -->
+        <div class="ptab-panel active" id="panel-info">
+            <!-- Columna principal -->
+            <div style="display:flex;flex-direction:column;gap:1.5rem;">
+
+                <!-- Datos personales -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <span class="section-title">Datos personales</span>
+                        <button class="section-action" id="btn-edit-profile">Editar →</button>
+                    </div>
+                    <div class="info-grid" id="personal-data-grid">
+                        <div class="info-item"><div class="info-label">Nombre</div><div class="info-value skeleton" style="height:16px;width:120px;">&nbsp;</div></div>
+                        <div class="info-item"><div class="info-label">Apellido</div><div class="info-value skeleton" style="height:16px;width:100px;">&nbsp;</div></div>
+                        <div class="info-item"><div class="info-label">Usuario</div><div class="info-value skeleton" style="height:16px;width:90px;">&nbsp;</div></div>
+                        <div class="info-item"><div class="info-label">Fecha de nacimiento</div><div class="info-value skeleton" style="height:16px;width:110px;">&nbsp;</div></div>
+                        <div class="info-item full-width"><div class="info-label">Email</div><div class="info-value skeleton" style="height:16px;width:180px;">&nbsp;</div></div>
+                    </div>
+                </div>
+
+                <!-- Seguridad -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <span class="section-title">Seguridad</span>
+                    </div>
+                    <div class="config-menu" style="padding:0.75rem;">
+                        <div class="config-item" id="btn-change-password">
+                            <div class="ci-icon blue">🔒</div>
+                            <div class="ci-body">
+                                <div class="ci-title">Cambiar contraseña</div>
+                                <div class="ci-sub">Actualiza tu contraseña de acceso</div>
+                            </div>
+                            <div class="ci-arrow">›</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna lateral: stats -->
+            <div class="stats-stack">
+                <div class="stat-card">
+                    <div class="stat-icon gold">📊</div>
+                    <div class="stat-body">
+                        <div class="stat-label">Gastos registrados</div>
+                        <div class="stat-value" id="stat-expenses">—</div>
+                        <div class="stat-sub">Transacciones</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon sage">💰</div>
+                    <div class="stat-body">
+                        <div class="stat-label">Ingresos registrados</div>
+                        <div class="stat-value" id="stat-incomes">—</div>
+                        <div class="stat-sub">Entradas de dinero</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">💳</div>
+                    <div class="stat-body">
+                        <div class="stat-label">Cuentas activas</div>
+                        <div class="stat-value" id="stat-cards">—</div>
+                        <div class="stat-sub">Tarjetas y cuentas</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon rust">🤝</div>
+                    <div class="stat-body">
+                        <div class="stat-label">Deudas pendientes</div>
+                        <div class="stat-value" id="stat-debts">—</div>
+                        <div class="stat-sub">Sin saldar</div>
+                    </div>
+                </div>
+                <div class="membership-bar">
+                    <div class="mb-label">✦ Miembro desde</div>
+                    <div class="mb-since" id="mb-since">—</div>
+                    <div class="mb-days" id="mb-days">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── TAB: ACTIVIDAD ── -->
+        <div class="ptab-panel" id="panel-activity" style="grid-column:1/-1;">
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-title">Actividad reciente</span>
+                    <span id="activity-count" style="font-size:0.72rem;color:var(--muted);">—</span>
+                </div>
+                <div id="activity-list" style="max-height:480px;overflow-y:auto;">
+                    <div style="padding:2rem;text-align:center;color:var(--muted);font-size:0.82rem;">Cargando…</div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /profile-body -->
+</div><!-- /main -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: CONFIGURACIONES HUB
+═══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-settings">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Configuración
+                <small>Personaliza tu cuenta y preferencias</small>
+            </div>
+            <button class="modal-close" data-close="modal-settings">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="config-menu">
+                <div class="config-item" id="cfg-edit-profile">
+                    <div class="ci-icon gold">👤</div>
+                    <div class="ci-body">
+                        <div class="ci-title">Editar perfil</div>
+                        <div class="ci-sub">Nombre, apellido, usuario, fecha de nacimiento</div>
+                    </div>
+                    <div class="ci-arrow">›</div>
+                </div>
+                <div class="config-item" id="cfg-change-photo">
+                    <div class="ci-icon cream">🖼</div>
+                    <div class="ci-body">
+                        <div class="ci-title">Foto de perfil</div>
+                        <div class="ci-sub">Actualiza o elimina tu imagen</div>
+                    </div>
+                    <div class="ci-arrow">›</div>
+                </div>
+                <div class="config-sep"></div>
+                <div class="config-item" id="cfg-change-password">
+                    <div class="ci-icon blue">🔒</div>
+                    <div class="ci-body">
+                        <div class="ci-title">Cambiar contraseña</div>
+                        <div class="ci-sub">Actualiza tu contraseña de acceso</div>
+                    </div>
+                    <div class="ci-arrow">›</div>
+                </div>
+                <div class="config-item" id="cfg-change-email">
+                    <div class="ci-icon sage">✉️</div>
+                    <div class="ci-body">
+                        <div class="ci-title">Cambiar email</div>
+                        <div class="ci-sub">Se enviará un enlace de confirmación</div>
+                    </div>
+                    <div class="ci-arrow">›</div>
+                </div>
+                <div class="config-sep"></div>
+                <div class="config-item danger" id="cfg-delete-account">
+                    <div class="ci-icon rust">⚠️</div>
+                    <div class="ci-body">
+                        <div class="ci-title" style="color:var(--rust);">Eliminar cuenta</div>
+                        <div class="ci-sub">Esta acción es irreversible</div>
+                    </div>
+                    <div class="ci-arrow">›</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: EDITAR PERFIL ═══════════════════════════════ -->
+<div class="modal-overlay" id="modal-edit-profile">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Editar perfil
+                <small>Los cambios se guardan inmediatamente</small>
+            </div>
+            <button class="modal-close" data-close="modal-edit-profile">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="field-row-2">
+                <div class="mfield">
+                    <label>Nombre</label>
+                    <input type="text" id="edit-firstname" placeholder="Tu nombre">
+                </div>
+                <div class="mfield">
+                    <label>Apellido</label>
+                    <input type="text" id="edit-lastname" placeholder="Tu apellido">
+                </div>
+            </div>
+            <div class="mfield">
+                <label>Usuario <span style="font-weight:400;text-transform:none;letter-spacing:0;">(único)</span></label>
+                <input type="text" id="edit-username" placeholder="nombre_usuario">
+                <div class="mfield-hint">Solo letras, números y guión bajo. Sin espacios.</div>
+            </div>
+            <div class="mfield">
+                <label>Fecha de nacimiento</label>
+                <input type="date" id="edit-birthdate">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" data-close="modal-edit-profile">Cancelar</button>
+            <button class="btn-primary gold-btn" id="btn-save-profile">
+                Guardar cambios
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: CAMBIAR CONTRASEÑA ══════════════════════════ -->
+<div class="modal-overlay" id="modal-change-password">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Cambiar contraseña
+                <small>Usa Supabase Auth — no se guarda en texto plano</small>
+            </div>
+            <button class="modal-close" data-close="modal-change-password">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="mfield">
+                <label>Nueva contraseña</label>
+                <input type="password" id="pwd-new" placeholder="••••••••" autocomplete="new-password">
+                <div class="pwd-strength">
+                    <div class="pwd-bar-track"><div class="pwd-bar-fill" id="pwd-bar"></div></div>
+                    <div class="pwd-label" id="pwd-label">Ingresa una contraseña</div>
+                </div>
+            </div>
+            <div class="mfield">
+                <label>Confirmar contraseña</label>
+                <input type="password" id="pwd-confirm" placeholder="••••••••" autocomplete="new-password">
+                <div class="mfield-error" id="pwd-match-error">Las contraseñas no coinciden.</div>
+            </div>
+            <div class="mfield-hint" style="margin-top:0.25rem;">
+                Mínimo 8 caracteres. Recomendamos combinar letras, números y símbolos.
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" data-close="modal-change-password">Cancelar</button>
+            <button class="btn-primary" id="btn-save-password" disabled>Actualizar contraseña</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: CAMBIAR EMAIL ════════════════════════════════ -->
+<div class="modal-overlay" id="modal-change-email">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Cambiar email
+                <small>Recibirás un enlace de confirmación en el nuevo correo</small>
+            </div>
+            <button class="modal-close" data-close="modal-change-email">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="mfield">
+                <label>Email actual</label>
+                <input type="email" id="email-current" disabled style="opacity:0.55;">
+            </div>
+            <div class="mfield">
+                <label>Nuevo email</label>
+                <input type="email" id="email-new" placeholder="nuevo@email.com" autocomplete="email">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" data-close="modal-change-email">Cancelar</button>
+            <button class="btn-primary" id="btn-save-email">Enviar confirmación</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: FOTO DE PERFIL ══════════════════════════════ -->
+<div class="modal-overlay" id="modal-photo">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Foto de perfil</div>
+            <button class="modal-close" data-close="modal-photo">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:1.25rem;">
+                <!-- Preview del avatar -->
+                <div style="position:relative;width:90px;height:90px;">
+                    <canvas id="modal-avatar-canvas" style="border-radius:50%;width:90px;height:90px;"></canvas>
+                    <img id="modal-avatar-img" style="display:none;position:absolute;inset:0;width:90px;height:90px;border-radius:50%;object-fit:cover;" alt="">
+                </div>
+                <div style="font-size:0.78rem;color:var(--muted);text-align:center;">
+                    Si no subes imagen, se usará tu avatar con iniciales
+                </div>
+            </div>
+            <div class="mfield" style="margin-top:1.25rem;">
+                <label>URL de imagen externa</label>
+                <input type="url" id="photo-url" placeholder="https://…">
+                <div class="mfield-hint">Pega la URL de una imagen accesible públicamente.</div>
+            </div>
+            <div class="config-sep" style="margin:0.75rem 0;"></div>
+            <div class="config-item danger" id="btn-remove-photo" style="border-radius:var(--radius-sm);">
+                <div class="ci-icon rust">🗑</div>
+                <div class="ci-body">
+                    <div class="ci-title" style="color:var(--rust);">Eliminar foto actual</div>
+                    <div class="ci-sub">Se volverá al avatar generativo</div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" data-close="modal-photo">Cancelar</button>
+            <button class="btn-primary gold-btn" id="btn-save-photo">Guardar foto</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MODAL: ELIMINAR CUENTA ═════════════════════════════ -->
+<div class="modal-overlay" id="modal-delete-account">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title" style="color:var(--rust);">⚠️ Eliminar cuenta
+                <small style="color:var(--muted);">Esta acción no se puede deshacer</small>
+            </div>
+            <button class="modal-close" data-close="modal-delete-account">✕</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:0.85rem;line-height:1.6;color:var(--muted);margin-bottom:1rem;">
+                Se marcará tu cuenta como eliminada. Tus datos financieros permanecerán en la base de datos pero ya no podrás acceder a ellos.
+            </p>
+            <div class="mfield">
+                <label>Escribe <strong>ELIMINAR</strong> para confirmar</label>
+                <input type="text" id="delete-confirm-input" placeholder="ELIMINAR">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" data-close="modal-delete-account">Cancelar</button>
+            <button class="btn-primary danger-btn" id="btn-confirm-delete" disabled>
+                Eliminar mi cuenta
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="../js/main.js"></script>
+<script type="module" src="../js/perfil.js"></script>
+</body>
+</html>
