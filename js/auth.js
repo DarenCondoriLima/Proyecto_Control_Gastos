@@ -43,9 +43,12 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
+        options: {
+            emailRedirectTo: 'https://darencondorilima.github.io/Proyecto_Control_Gastos/html/dashboard.html'
+        }
     });
 
     if (error) {
