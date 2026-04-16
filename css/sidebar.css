@@ -237,8 +237,10 @@
 
     /* Responsive Sidebar Improvements */
     .sidebar {
-        width: 200px;
-        padding: 1.5rem 1rem;
+        width: min(82vw, 240px);
+        padding: 1.25rem 1rem;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .sb-brand {
@@ -253,13 +255,14 @@
 
     .sb-nav a {
         font-size: 0.8rem;
-        padding: 0.5rem 0.6rem;
+        padding: 0.55rem 0.65rem;
     }
 
     .sb-user {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
+        width: 100%;
     }
 
     .sb-user-name {
@@ -273,16 +276,35 @@
 
 @media (max-width: 768px) {
     .sidebar {
-        width: 180px;
+        width: min(86vw, 320px);
         padding: 1rem 0.75rem;
     }
 
     .sb-nav a {
         font-size: 0.75rem;
-        padding: 0.4rem 0.5rem;
+        padding: 0.5rem 0.6rem;
     }
 
     .sb-user {
         padding: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar {
+        width: min(88vw, 310px);
+    }
+
+    .sb-brand {
+        padding-bottom: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .sb-section-label {
+        font-size: 0.6rem;
+    }
+
+    .sb-nav a {
+        font-size: 0.74rem;
     }
 }
