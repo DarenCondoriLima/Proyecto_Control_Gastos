@@ -168,3 +168,5 @@ CREATE TABLE IF NOT EXISTS public.transfers (
 ALTER TABLE public.transfers ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "users_own_transfers" ON public.transfers
 FOR ALL USING (auth.uid() = id_user);
+
+ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS exclude_from_balance BOOLEAN DEFAULT FALSE;

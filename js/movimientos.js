@@ -745,7 +745,8 @@ async function savePayment(user) {
         payment_method:  source?.type_card === 'Cash' ? 'Cash' : 'Debit',
         id_card:         sourceCard,
         installments:    1,
-        installment_amt: null
+        installment_amt: null,
+        exclude_from_balance: true
     }]);
 
     setLoading('pay-submit-btn', false, 'Registrar Pago');
