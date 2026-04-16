@@ -250,6 +250,7 @@ body {
 }
 .breakdown-row-date { font-size: 0.7rem; color: var(--muted); margin-top: 0.08rem; }
 .breakdown-row-meta { font-size: 0.68rem; color: var(--blue); margin-top: 0.08rem; }
+.breakdown-row-meta-inline { font-size: 0.68rem; color: var(--muted); }
 .breakdown-row-amount { font-size: 0.88rem; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 .breakdown-row-amount.green-text { color: var(--green); }
 .green-text { color: var(--green); }
