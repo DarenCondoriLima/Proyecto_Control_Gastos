@@ -30,10 +30,9 @@ async function loadMonthlyConsolidatedData(userId) {
             .select('month_budget, year_budget, total_budget, currency_budget')
             .eq('id_user', userId)
             .eq('deleted_budget', false),
-        supabase.from('incomes')
-            .select('amount_inc, date_inc, payment_method')
+        supabase.from('monthly_incomes')
+            .select('amount_income, date_income')
             .eq('id_user', userId)
-            .in('payment_method', ['Debit', 'Cash']) // Solo Débito o Efectivo
     ]);
 
     if (budgetsRes.error || incomesRes.error) {
@@ -54,7 +53,7 @@ async function loadMonthlyConsolidatedData(userId) {
     // 2. Procesar Ingresos Reales (Monto disponible para gastar)
     incomesRes.data.forEach(i => {
         // El formato es 2026-04-01, extraemos mes y año
-        const dateParts = i.date_inc.split('-');
+        const dateParts = i.date_income.split('-');
         const year = parseInt(dateParts[0]);
         const month = parseInt(dateParts[1]);
         
@@ -63,7 +62,7 @@ async function loadMonthlyConsolidatedData(userId) {
             // Si hay ingresos en un mes sin presupuesto, creamos la entrada
             monthlyData[key] = { month, year, totalBudget: 0, totalIncome: 0, currency: 'PEN' };
         }
-        monthlyData[key].totalIncome += parseFloat(i.amount_inc);
+        monthlyData[key].totalIncome += parseFloat(i.amount_income);
     });
 
     renderMonthlyCards(Object.values(monthlyData));

@@ -16,6 +16,8 @@ let _sortField      = 'date';
 let _sortDir        = 'desc';
 let _searchQuery    = '';
 let _currentPage    = 1;
+let _currentDrawerRaw = null;
+let _currentDrawerType = null;
 const PAGE_SIZE     = 25;
 
 // ─────────────────────────────────────────────────────────────
@@ -1264,10 +1266,58 @@ function populateDrawerCards(method, selectedId = null) {
     });
 }
 
+function toNumber(value) {
+    return Number.parseFloat(value || 0) || 0;
+}
+
+async function adjustCardBalance(cardId, delta) {
+    if (!cardId || !delta) return;
+
+    const card = _allCards.find(c => c.id_card === cardId);
+    const currentBalance = toNumber(card?.current_balance);
+    const newBalance = currentBalance + delta;
+
+    const { error } = await supabase
+        .from('cards')
+        .update({ current_balance: newBalance })
+        .eq('id_card', cardId);
+
+    if (error) throw error;
+    if (card) card.current_balance = newBalance;
+}
+
+function getExpenseBalanceDelta(expense) {
+    if (!expense || expense.exclude_from_balance || expense.deleted_exp) return 0;
+    const amount = toNumber(expense.amount_exp);
+    if (expense.payment_method === 'Credit') return amount;
+    if (expense.payment_method === 'Cash' || expense.payment_method === 'Debit') return -amount;
+    return 0;
+}
+
+function getIncomeBalanceDelta(income) {
+    if (!income) return 0;
+    return toNumber(income.amount_income);
+}
+
+function getCreditPaymentBalanceDeltas(payment) {
+    if (!payment) return [];
+    const amount = toNumber(payment.amount_paid);
+    const deltas = [];
+    if (payment.id_card) deltas.push({ cardId: payment.id_card, delta: amount });
+    if (payment.source_account) deltas.push({ cardId: payment.source_account, delta: amount });
+    return deltas;
+}
+
+function getCurrentDrawerRow(type, id) {
+    if (_currentDrawerRaw && _currentDrawerType === type) return _currentDrawerRaw;
+    return _cachedRows.find(r => r.id === id && r.type === type)?.raw || null;
+}
+
 async function saveDrawer() {
     const id   = document.getElementById('d-id').value;
     const type = document.getElementById('d-type').value;
     const btn  = document.getElementById('drawer-save-btn');
+    const previousRaw = getCurrentDrawerRow(type, id);
 
     btn.disabled    = true;
     btn.textContent = 'Guardando…';
@@ -1279,6 +1329,16 @@ async function saveDrawer() {
             const installments = parseInt(document.getElementById('d-installments').value) || 1;
             const instAmt      = parseFloat(document.getElementById('d-inst-amt').value);
             const installmentAmt = installments > 1 && !isNaN(instAmt) && instAmt > 0 ? instAmt : null;
+            const nextExpense = {
+                amount_exp: totalAmount,
+                payment_method: method,
+                id_card: document.getElementById('d-card').value || null,
+                exclude_from_balance: false,
+            };
+
+            if (previousRaw) {
+                await adjustCardBalance(previousRaw.id_card, -getExpenseBalanceDelta(previousRaw));
+            }
 
             const { error } = await supabase.from('expenses').update({
                 amount_exp:      totalAmount,
@@ -1287,20 +1347,40 @@ async function saveDrawer() {
                 payment_method:  method,
                 id_category:     document.getElementById('d-cat').value   || null,
                 id_subcat:       document.getElementById('d-subcat').value || null,
-                id_card:         method === 'Cash' ? null : (document.getElementById('d-card').value || null),
+                id_card:         nextExpense.id_card,
                 installments,
                 installment_amt: installmentAmt,
                 updated_at:      new Date().toISOString()
             }).eq('id_exp', id);
             if (error) throw error;
 
+            const updatedExpense = {
+                ...previousRaw,
+                ...nextExpense,
+                amount_exp: totalAmount,
+                installments,
+                installment_amt: installmentAmt,
+            };
+            await adjustCardBalance(updatedExpense.id_card, getExpenseBalanceDelta(updatedExpense));
+
         } else {
+            const previousIncome = previousRaw;
+            if (previousIncome) {
+                await adjustCardBalance(previousIncome.id_card, -getIncomeBalanceDelta(previousIncome));
+            }
+
             const { error } = await supabase.from('monthly_incomes').update({
                 amount_income: parseFloat(document.getElementById('d-amount').value),
                 date_income:   document.getElementById('d-date').value,
                 notes_income:  document.getElementById('d-desc').value.trim() || null
             }).eq('id_income', id);
             if (error) throw error;
+
+            const updatedIncome = {
+                ...previousIncome,
+                amount_income: parseFloat(document.getElementById('d-amount').value),
+            };
+            await adjustCardBalance(updatedIncome.id_card, getIncomeBalanceDelta(updatedIncome));
         }
 
         closeDrawer();
@@ -1321,12 +1401,48 @@ async function deleteTransaction(id, type) {
     if (!confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
 
     try {
+        const raw = _cachedRows.find(r => r.id === id && r.type === type)?.raw || null;
         let error;
         if (type === 'expense') {
+            if (raw) {
+                await adjustCardBalance(raw.id_card, -getExpenseBalanceDelta(raw));
+            }
             ({ error } = await supabase.from('expenses').update({ deleted_exp: true, updated_at: new Date().toISOString() }).eq('id_exp', id));
         } else if (type === 'credit_payment') {
+            if (raw) {
+                for (const entry of getCreditPaymentBalanceDeltas(raw)) {
+                    await adjustCardBalance(entry.cardId, entry.delta);
+                }
+
+                // Al registrar pago también se crea un gasto espejo (exclude_from_balance=true)
+                // enlazado por id_credit_payment. Usamos esa referencia para borrado exacto.
+                const { error: mirrorErr } = await supabase
+                    .from('expenses')
+                    .update({ deleted_exp: true, updated_at: new Date().toISOString() })
+                    .eq('id_credit_payment', raw.id_payment)
+                    .eq('deleted_exp', false);
+
+                if (mirrorErr) throw mirrorErr;
+
+                // Fallback para registros antiguos sin id_credit_payment.
+                const { error: legacyMirrorErr } = await supabase
+                    .from('expenses')
+                    .update({ deleted_exp: true, updated_at: new Date().toISOString() })
+                    .eq('id_user', raw.id_user)
+                    .eq('date_exp', raw.date_payment)
+                    .eq('id_card', raw.source_account)
+                    .eq('exclude_from_balance', true)
+                    .eq('deleted_exp', false)
+                    .eq('amount_exp', raw.amount_paid)
+                    .is('id_credit_payment', null);
+
+                if (legacyMirrorErr) throw legacyMirrorErr;
+            }
             ({ error } = await supabase.from('credit_card_payments').delete().eq('id_payment', id));
         } else {
+            if (raw) {
+                await adjustCardBalance(raw.id_card, -getIncomeBalanceDelta(raw));
+            }
             ({ error } = await supabase.from('monthly_incomes').delete().eq('id_income', id));
         }
         if (error) throw error;

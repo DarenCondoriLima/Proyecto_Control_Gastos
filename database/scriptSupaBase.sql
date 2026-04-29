@@ -180,30 +180,9 @@ CREATE TABLE Debts(
 );
 
 -- =============================================
--- 10. INCOMES: Registro de entradas de dinero.
+-- 10. MONTHLY_INCOMES: Registro de entradas de dinero.
 -- =============================================
 
-CREATE TABLE public.incomes (
-    id_inc uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    id_user uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    amount_inc NUMERIC(15,2) NOT NULL,
-    date_inc DATE DEFAULT CURRENT_DATE,
-    id_category uuid REFERENCES public.categories(id_cat) ON DELETE SET NULL,
-    payment_method TEXT CHECK (payment_method IN ('Cash', 'Debit')),
-    id_card uuid REFERENCES public.cards(id_card) ON DELETE SET NULL,
-    description_inc TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Habilitar RLS (Seguridad)
-ALTER TABLE public.incomes ENABLE ROW LEVEL SECURITY;
-
--- Crear política para que cada usuario solo vea sus ingresos
-CREATE POLICY "Users can manage their own incomes" 
-ON public.incomes FOR ALL 
-USING (auth.uid() = id_user);
-
--- 1. Tabla para registrar el ingreso total del mes
 CREATE TABLE IF NOT EXISTS monthly_incomes (
     id_income UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     id_user UUID REFERENCES auth.users(id) NOT NULL,

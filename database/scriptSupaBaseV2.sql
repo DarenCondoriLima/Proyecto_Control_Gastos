@@ -98,6 +98,8 @@ CREATE TABLE public.credit_card_payments (
 -- =============================================
 -- 6. MONTHLY INCOMES
 -- =============================================
+DROP TABLE IF EXISTS public.incomes;
+
 CREATE TABLE public.monthly_incomes (
     id_income       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     id_user         UUID REFERENCES auth.users(id) NOT NULL,
@@ -170,3 +172,6 @@ CREATE POLICY "users_own_transfers" ON public.transfers
 FOR ALL USING (auth.uid() = id_user);
 
 ALTER TABLE public.expenses ADD COLUMN IF NOT EXISTS exclude_from_balance BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE public.expenses
+ADD COLUMN IF NOT EXISTS id_credit_payment UUID REFERENCES public.credit_card_payments(id_payment) ON DELETE SET NULL;

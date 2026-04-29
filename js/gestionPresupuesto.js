@@ -58,18 +58,15 @@ async function loadPeriodData(userId) {
     const endDate   = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
 
     const { data: incData, error: incError } = await supabase
-        .from('incomes')
-        .select('amount_inc, payment_method')
+        .from('monthly_incomes')
+        .select('amount_income, date_income')
         .eq('id_user', userId)
-        .gte('date_inc', startDate)
-        .lte('date_inc', endDate);
+        .gte('date_income', startDate)
+        .lte('date_income', endDate);
 
-    if (incError) console.error('[incomes] Error:', incError.message);
+    if (incError) console.error('[monthly_incomes] Error:', incError.message);
 
-    const filteredIncomes = incData?.filter(i =>
-        i.payment_method === 'Cash' || i.payment_method === 'Debit'
-    ) || [];
-    ingresosMes = filteredIncomes.reduce((acc, curr) => acc + parseFloat(curr.amount_inc), 0);
+    ingresosMes = (incData || []).reduce((acc, curr) => acc + parseFloat(curr.amount_income), 0);
 
     // ── 2. Presupuestos del mes ──────────────────────────────────
     const { data: budData, error: budError } = await supabase

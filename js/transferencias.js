@@ -342,7 +342,7 @@ async function saveTransfer(userId) {
         if (trErr) throw trErr;
 
         // ── 2. Actualizar saldos directamente ────────────────
-        // Los triggers solo cubren expenses/incomes.
+        // Los triggers solo cubren expenses/monthly_incomes.
         // Las transferencias actualizan current_balance manualmente.
 
         const newOriginBal = balOrigen - amount;

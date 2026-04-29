@@ -642,6 +642,22 @@ function updatePaySourceBalance() {
     }
 }
 
+function getBillingCycleFromDate(dateObj, cutoffDay) {
+    const cycleDate = new Date(dateObj.getFullYear(), dateObj.getMonth() + (dateObj.getDate() > cutoffDay ? 1 : 0), 1);
+    return {
+        month: cycleDate.getMonth() + 1,
+        year: cycleDate.getFullYear(),
+    };
+}
+
+function shiftCycle(month, year, deltaMonths) {
+    const shifted = new Date(year, month - 1 + deltaMonths, 1);
+    return {
+        month: shifted.getMonth() + 1,
+        year: shifted.getFullYear(),
+    };
+}
+
 async function savePayment(user) {
     const amount      = parseFloat(document.getElementById('pay-amount').value);
     const creditCard  = document.getElementById('pay-credit-card').value;
@@ -679,14 +695,17 @@ async function savePayment(user) {
     }
 
     // ── Calcular mes/año del ciclo al que se atribuye el pago ─
+    // target_cycle no debe basarse en el mes calendario del pago,
+    // sino en el ciclo real definido por el cutoff de la tarjeta.
+    const creditCardData = allCards.find(c => c.id_card === creditCard);
+    const cutoffDay = creditCardData?.cutoff_day || 0;
     const dateObj  = new Date(datePay + 'T00:00:00');
-    let monthAttr  = dateObj.getMonth() + 1;
-    let yearAttr   = dateObj.getFullYear();
-
-    if (targetCycle === 'previous') {
-        monthAttr -= 1;
-        if (monthAttr === 0) { monthAttr = 12; yearAttr -= 1; }
-    }
+    const currentCycle = getBillingCycleFromDate(dateObj, cutoffDay);
+    const attributedCycle = targetCycle === 'current'
+        ? currentCycle
+        : shiftCycle(currentCycle.month, currentCycle.year, -1);
+    const monthAttr = attributedCycle.month;
+    const yearAttr  = attributedCycle.year;
 
     // ── Buscar categoría y subcategoría para el gasto automático ─
     const [catRes, subRes] = await Promise.all([
@@ -714,17 +733,21 @@ async function savePayment(user) {
     setLoading('pay-submit-btn', true);
 
     // ── Insertar el registro de pago ─────────────────────────
-    const { error: payError } = await supabase.from('credit_card_payments').insert([{
-        id_user:        user.id,
-        id_card:        creditCard,
-        amount_paid:    amount,
-        date_payment:   datePay,
-        source_account: sourceCard,
-        target_cycle:   targetCycle,
-        month_cycle:    monthAttr,
-        year_cycle:     yearAttr,
-        notes:          notes || null
-    }]);
+    const { data: payData, error: payError } = await supabase
+        .from('credit_card_payments')
+        .insert([{
+            id_user:        user.id,
+            id_card:        creditCard,
+            amount_paid:    amount,
+            date_payment:   datePay,
+            source_account: sourceCard,
+            target_cycle:   targetCycle,
+            month_cycle:    monthAttr,
+            year_cycle:     yearAttr,
+            notes:          notes || null
+        }])
+        .select('id_payment')
+        .single();
 
     if (payError) {
         setLoading('pay-submit-btn', false, 'Registrar Pago');
@@ -744,6 +767,7 @@ async function savePayment(user) {
         description_exp: notes || 'Pago tarjeta de crédito',
         payment_method:  source?.type_card === 'Cash' ? 'Cash' : 'Debit',
         id_card:         sourceCard,
+        id_credit_payment: payData?.id_payment || null,
         installments:    1,
         installment_amt: null,
         exclude_from_balance: true
