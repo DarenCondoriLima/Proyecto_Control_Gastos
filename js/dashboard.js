@@ -1349,8 +1349,7 @@ async function saveDrawer() {
                 id_subcat:       document.getElementById('d-subcat').value || null,
                 id_card:         nextExpense.id_card,
                 installments,
-                installment_amt: installmentAmt,
-                updated_at:      new Date().toISOString()
+                installment_amt: installmentAmt
             }).eq('id_exp', id);
             if (error) throw error;
 
@@ -1407,7 +1406,7 @@ async function deleteTransaction(id, type) {
             if (raw) {
                 await adjustCardBalance(raw.id_card, -getExpenseBalanceDelta(raw));
             }
-            ({ error } = await supabase.from('expenses').update({ deleted_exp: true, updated_at: new Date().toISOString() }).eq('id_exp', id));
+            ({ error } = await supabase.from('expenses').update({ deleted_exp: true }).eq('id_exp', id));
         } else if (type === 'credit_payment') {
             if (raw) {
                 for (const entry of getCreditPaymentBalanceDeltas(raw)) {
@@ -1418,7 +1417,7 @@ async function deleteTransaction(id, type) {
                 // enlazado por id_credit_payment. Usamos esa referencia para borrado exacto.
                 const { error: mirrorErr } = await supabase
                     .from('expenses')
-                    .update({ deleted_exp: true, updated_at: new Date().toISOString() })
+                    .update({ deleted_exp: true })
                     .eq('id_credit_payment', raw.id_payment)
                     .eq('deleted_exp', false);
 
@@ -1427,7 +1426,7 @@ async function deleteTransaction(id, type) {
                 // Fallback para registros antiguos sin id_credit_payment.
                 const { error: legacyMirrorErr } = await supabase
                     .from('expenses')
-                    .update({ deleted_exp: true, updated_at: new Date().toISOString() })
+                    .update({ deleted_exp: true })
                     .eq('id_user', raw.id_user)
                     .eq('date_exp', raw.date_payment)
                     .eq('id_card', raw.source_account)
