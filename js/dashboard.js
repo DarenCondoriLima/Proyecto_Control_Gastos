@@ -1,4 +1,13 @@
 import { supabase } from './supabase.js';
+import {
+    applyExpenseImpact,
+    revertExpenseImpact,
+    applyIncomeImpact,
+    revertIncomeImpact,
+    applyCreditPaymentImpact,
+    revertCreditPaymentImpact,
+    deleteMirrorExpensesByPaymentId
+} from './balanceHandlers.js';
 
 // ─────────────────────────────────────────────────────────────
 // ESTADO GLOBAL
@@ -1337,7 +1346,8 @@ async function saveDrawer() {
             };
 
             if (previousRaw) {
-                await adjustCardBalance(previousRaw.id_card, -getExpenseBalanceDelta(previousRaw));
+                // Revert previous expense impact
+                await revertExpenseImpact(previousRaw);
             }
 
             const { error } = await supabase.from('expenses').update({
@@ -1360,12 +1370,13 @@ async function saveDrawer() {
                 installments,
                 installment_amt: installmentAmt,
             };
-            await adjustCardBalance(updatedExpense.id_card, getExpenseBalanceDelta(updatedExpense));
+            // Apply updated impact
+            await applyExpenseImpact(updatedExpense);
 
         } else {
             const previousIncome = previousRaw;
             if (previousIncome) {
-                await adjustCardBalance(previousIncome.id_card, -getIncomeBalanceDelta(previousIncome));
+                await revertIncomeImpact(previousIncome);
             }
 
             const { error } = await supabase.from('monthly_incomes').update({
@@ -1379,7 +1390,7 @@ async function saveDrawer() {
                 ...previousIncome,
                 amount_income: parseFloat(document.getElementById('d-amount').value),
             };
-            await adjustCardBalance(updatedIncome.id_card, getIncomeBalanceDelta(updatedIncome));
+            await applyIncomeImpact(updatedIncome);
         }
 
         closeDrawer();
@@ -1404,43 +1415,21 @@ async function deleteTransaction(id, type) {
         let error;
         if (type === 'expense') {
             if (raw) {
-                await adjustCardBalance(raw.id_card, -getExpenseBalanceDelta(raw));
+                await revertExpenseImpact(raw);
             }
             ({ error } = await supabase.from('expenses').update({ deleted_exp: true }).eq('id_exp', id));
         } else if (type === 'credit_payment') {
             if (raw) {
-                for (const entry of getCreditPaymentBalanceDeltas(raw)) {
-                    await adjustCardBalance(entry.cardId, entry.delta);
-                }
+                // Revert payment impacts
+                await revertCreditPaymentImpact(raw);
 
-                // Al registrar pago también se crea un gasto espejo (exclude_from_balance=true)
-                // enlazado por id_credit_payment. Usamos esa referencia para borrado exacto.
-                const { error: mirrorErr } = await supabase
-                    .from('expenses')
-                    .update({ deleted_exp: true })
-                    .eq('id_credit_payment', raw.id_payment)
-                    .eq('deleted_exp', false);
-
-                if (mirrorErr) throw mirrorErr;
-
-                // Fallback para registros antiguos sin id_credit_payment.
-                const { error: legacyMirrorErr } = await supabase
-                    .from('expenses')
-                    .update({ deleted_exp: true })
-                    .eq('id_user', raw.id_user)
-                    .eq('date_exp', raw.date_payment)
-                    .eq('id_card', raw.source_account)
-                    .eq('exclude_from_balance', true)
-                    .eq('deleted_exp', false)
-                    .eq('amount_exp', raw.amount_paid)
-                    .is('id_credit_payment', null);
-
-                if (legacyMirrorErr) throw legacyMirrorErr;
+                // Delete/revert mirror expenses linked to this payment
+                await deleteMirrorExpensesByPaymentId(raw.id_payment);
             }
             ({ error } = await supabase.from('credit_card_payments').delete().eq('id_payment', id));
         } else {
             if (raw) {
-                await adjustCardBalance(raw.id_card, -getIncomeBalanceDelta(raw));
+                await revertIncomeImpact(raw);
             }
             ({ error } = await supabase.from('monthly_incomes').delete().eq('id_income', id));
         }

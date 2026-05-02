@@ -1,6 +1,6 @@
 # Documentacion del sistema Control de Gastos
 
-Este archivo resume como funciona la aplicacion completa: frontend, autenticacion, tablas de Supabase, procesos principales y triggers.
+Este archivo resume como funciona la aplicacion completa: frontend, autenticacion, tablas de Supabase, procesos principales y manejo de saldos.
 
 La idea es que puedas leerlo de arriba a abajo para entender que hace cada parte del sistema y como se conecta con las demas.
 
@@ -12,14 +12,14 @@ La aplicacion es un sistema web de control financiero personal. Usa:
 - JavaScript para toda la logica de negocio en el navegador.
 - Supabase Auth para registro, login y sesion.
 - Supabase Postgres para guardar usuarios, tarjetas, categorias, gastos, ingresos, transferencias, deudas y presupuestos.
-- Triggers en la base de datos para actualizar saldos automaticamente.
+- Handlers en JavaScript para actualizar saldos en el cliente (reemplazó triggers antiguos de saldos).
 
 El flujo general es este:
 
 1. El usuario se registra o inicia sesion con Supabase Auth.
-2. Un trigger crea su perfil en la tabla `Users` y le genera categorias y una cuenta inicial de efectivo.
+2. Un trigger de Auth crea su perfil en la tabla `Users` y le genera categorias y una cuenta inicial de efectivo.
 3. Desde las pantallas del sistema registra gastos, ingresos, transferencias, deudas y pagos de tarjeta.
-4. Cada insercion importante actualiza saldos en `Cards`.
+4. Cada operacion (insert/update/delete) llama funciones en `js/balanceHandlers.js` para actualizar saldos en `Cards`.
 5. El dashboard lee varias tablas para mostrar el estado financiero consolidado.
 
 ## 2. Capas del proyecto
@@ -704,3 +704,124 @@ Si quieres entender el sistema completo, la mejor ruta de lectura es:
 7. `js/transferencias.js`
 8. `js/detalleTarjeta.js`
 9. `js/dashboard.js`
+
+---
+
+## 7. Migración: De Triggers a Balance Handlers (Mayo 2026)
+
+### 7.1 ¿Qué cambió?
+
+**Antes:** Los saldos de tarjetas se actualizaban automáticamente en la base de datos usando triggers.
+
+**Ahora:** Los saldos se actualizan desde el cliente JavaScript usando funciones en `js/balanceHandlers.js`.
+
+### 7.2 Por qué cambiar?
+
+1. **Control explícito**: Es más fácil debugguear y verificar que los saldos se actualizan correctamente.
+2. **Ediciones y borrados**: Antes, editar/borrar era complejo con triggers. Ahora es simple: revert + apply.
+3. **Menos complejidad en BD**: La base de datos es más simple sin triggers de saldos.
+4. **Transacciones atómicas**: El cliente puede controlar exactamente qué se actualiza y en qué orden.
+
+### 7.3 Triggers eliminados
+
+Se eliminaron tres triggers de Supabase (ejecutados en `database/drop_triggers.sql`):
+
+- `trg_update_balance_expense` → Reemplazado por `applyExpenseImpact()` / `revertExpenseImpact()`
+- `trg_update_balance_income` → Reemplazado por `applyIncomeImpact()` / `revertIncomeImpact()`
+- `trg_update_balance_payment` → Reemplazado por `applyCreditPaymentImpact()` / `revertCreditPaymentImpact()`
+
+El trigger de Auth (`handle_new_user`) se mantuvo; sigue creando el perfil y categorías al registrarse.
+
+### 7.4 Nuevas funciones en `js/balanceHandlers.js`
+
+```javascript
+// Gastos
+applyExpenseImpact(expense)       // Aplica impacto de gasto al saldo
+revertExpenseImpact(oldExpense)   // Revierte impacto de gasto anterior
+
+// Ingresos
+applyIncomeImpact(income)         // Aplica impacto de ingreso al saldo
+revertIncomeImpact(oldIncome)     // Revierte impacto de ingreso anterior
+
+// Pagos de tarjeta
+applyCreditPaymentImpact(payment)     // Aplica impacto de pago a ambas tarjetas
+revertCreditPaymentImpact(oldPayment) // Revierte impacto de pago anterior
+deleteMirrorExpensesByPaymentId(id)   // Elimina gastos espejo de un pago
+```
+
+### 7.5 Cómo se usan en cada flujo
+
+#### Insert (crear nuevo)
+1. Insertar la fila en BD (`expenses`, `monthly_incomes` o `credit_card_payments`)
+2. Llamar `apply*Impact()` para actualizar el saldo
+
+Ejemplo en `js/movimientos.js`:
+```javascript
+const { data: inserted } = await supabase.from('expenses').insert([...]).select('*').single();
+await applyExpenseImpact(inserted);
+```
+
+#### Update (editar)
+1. Obtener la fila anterior
+2. Llamar `revert*Impact()` para deshacer el impacto antiguo
+3. Actualizar la fila en BD
+4. Llamar `apply*Impact()` con los nuevos datos
+
+Ejemplo en `js/dashboard.js`:
+```javascript
+const oldExpense = previousRaw;
+await revertExpenseImpact(oldExpense);
+await supabase.from('expenses').update({...}).eq('id_exp', id);
+await applyExpenseImpact({...oldExpense, ...newData});
+```
+
+#### Delete (eliminar)
+1. Obtener la fila
+2. Llamar `revert*Impact()` para deshacer el impacto
+3. Marcar como eliminada o borrar la fila
+
+Ejemplo en `js/dashboard.js`:
+```javascript
+const expense = await supabase.from('expenses').select('*').eq('id_exp', id).single();
+await revertExpenseImpact(expense);
+await supabase.from('expenses').update({ deleted_exp: true }).eq('id_exp', id);
+```
+
+### 7.6 Testing
+
+Archivo: `test.html` y `test.js`
+
+Para validar que los handlers funcionan correctamente:
+
+1. Abre `test.html` (o desde Live Server si tienes VS Code)
+2. Ejecuta pruebas individuales o la "Suite Completa"
+3. Verifica que los saldos se actualicen correctamente en:
+   - Inserción de gastos (Debit -monto, Cash -monto, Credit +monto)
+   - Edición de gastos (revert antiguo + apply nuevo)
+   - Eliminación de gastos (revert completo)
+   - Inserción de ingresos (+monto)
+   - Edición de ingresos (revert antiguo + apply nuevo)
+   - Eliminación de ingresos (revert completo)
+   - Inserción de pagos (TC -monto, origen -monto)
+   - Eliminación de pagos (revert ambas tarjetas)
+
+Ver `TESTING.md` para más detalles.
+
+### 7.7 Archivos modificados
+
+- `js/balanceHandlers.js` — Nuevo, contiene las 7 funciones de impacto
+- `js/movimientos.js` — Ahora llama `applyExpenseImpact()` y `applyCreditPaymentImpact()` en inserts
+- `js/dashboard.js` — Ahora llama `revert*` + `apply*` en edits y `revert*` en deletes
+- `database/drop_triggers.sql` — Script para eliminar triggers (ya ejecutado)
+- `database/triggers.sql` — Marcado como obsoleto; las funciones PL/pgSQL se han droppeado
+- `DOCUMENTACION_SISTEMA.md` — Actualizado (este archivo)
+
+### 7.8 Notas importantes
+
+1. **Atomicidad**: Los handlers actualizan el saldo leyendo el valor actual, sumando el delta y escribiendo el nuevo valor. Esto es vulnerable a condiciones de carrera si dos operaciones ocurren simultáneamente. **Recomendación futura**: Usar una función RPC en Supabase para encapsular la lógica atómicamente en la BD.
+
+2. **Soft-delete**: Los gastos y pagos se marcan con `deleted_exp: true` en lugar de borrarse. Esto permite auditoria.
+
+3. **Mirror expenses**: Cuando se crea un pago de tarjeta, se crea un gasto espejo (con `exclude_from_balance: true`) para mantener un registro. Este gasto se elimina cuando el pago se elimina.
+
+4. **Ciclo de tarjeta de crédito**: El ciclo (`month_cycle`, `year_cycle`) se calcula en el cliente basado en `cutoff_day` de la tarjeta y el `target_cycle` del pago (previous/current).

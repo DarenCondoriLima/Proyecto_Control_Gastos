@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Handlers Tests</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 2rem;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        .test-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 6px;
+        }
+        .test-section h2 {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .results {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .result-item {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .result-pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .result-fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .result-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .status {
+            font-weight: bold;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.running {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        input, select {
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Balance Handlers Test Suite</h1>
+        <p style="color: #666; margin-bottom: 1.5rem;">Valida que gastos, ingresos y pagos actualicen correctamente los saldos de tarjetas</p>
+
+        <!-- STATS -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Tests Totales</div>
+                <div class="stat-value" id="total-tests">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Exitosos</div>
+                <div class="stat-value" id="passed-tests" style="color: #28a745;">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Fallidos</div>
+                <div class="stat-value" id="failed-tests" style="color: #dc3545;">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Estado</div>
+                <div class="stat-value" id="test-status" style="font-size: 1.25rem; color: #6c757d;">Listo</div>
+            </div>
+        </div>
+
+        <!-- TEST 1: EXPENSES -->
+        <div class="test-section">
+            <h2>1️⃣ Test Expenses (Gastos)</h2>
+            <p style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">
+                Inserta un gasto, valida que el saldo se actualice. Luego edita y borra, verificando revert.
+            </p>
+            <div class="input-group">
+                <div class="form-group">
+                    <label>Método</label>
+                    <select id="exp-method">
+                        <option value="Debit">Debit</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Credit">Credit</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Monto (S/)</label>
+                    <input type="number" id="exp-amount" placeholder="100.00" value="100.00" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input type="text" id="exp-desc" placeholder="Compra..." value="Test Expense">
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn-primary" onclick="testExpenseInsert()">Insertar Gasto</button>
+                <button class="btn-secondary" onclick="testExpenseEdit()">Editar Gasto</button>
+                <button class="btn-danger" onclick="testExpenseDelete()">Eliminar Gasto</button>
+                <button class="btn-success" onclick="testExpenseFlow()">Test Completo</button>
+            </div>
+            <div class="results" id="expense-results"></div>
+        </div>
+
+        <!-- TEST 2: INCOMES -->
+        <div class="test-section">
+            <h2>2️⃣ Test Incomes (Ingresos)</h2>
+            <p style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">
+                Inserta un ingreso, valida que el saldo aumente. Luego edita y borra.
+            </p>
+            <div class="input-group">
+                <div class="form-group">
+                    <label>Monto (S/)</label>
+                    <input type="number" id="inc-amount" placeholder="500.00" value="500.00" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input type="text" id="inc-desc" placeholder="Ingreso..." value="Test Income">
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn-primary" onclick="testIncomeInsert()">Insertar Ingreso</button>
+                <button class="btn-secondary" onclick="testIncomeEdit()">Editar Ingreso</button>
+                <button class="btn-danger" onclick="testIncomeDelete()">Eliminar Ingreso</button>
+                <button class="btn-success" onclick="testIncomeFlow()">Test Completo</button>
+            </div>
+            <div class="results" id="income-results"></div>
+        </div>
+
+        <!-- TEST 3: CREDIT PAYMENTS -->
+        <div class="test-section">
+            <h2>3️⃣ Test Credit Payments (Pagos)</h2>
+            <p style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">
+                Inserta un pago de tarjeta de crédito, valida que revierte deuda. Luego elimina.
+            </p>
+            <div class="input-group">
+                <div class="form-group">
+                    <label>Monto (S/)</label>
+                    <input type="number" id="pay-amount" placeholder="250.00" value="250.00" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input type="text" id="pay-desc" placeholder="Pago..." value="Test Payment">
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn-primary" onclick="testPaymentInsert()">Insertar Pago</button>
+                <button class="btn-danger" onclick="testPaymentDelete()">Eliminar Pago</button>
+                <button class="btn-success" onclick="testPaymentFlow()">Test Completo</button>
+            </div>
+            <div class="results" id="payment-results"></div>
+        </div>
+
+        <!-- FULL SUITE -->
+        <div class="test-section">
+            <h2>🎯 Ejecutar Suite Completa</h2>
+            <p style="color: #666; margin-bottom: 1rem; font-size: 0.9rem;">
+                Ejecuta todos los tests en secuencia y genera un reporte.
+            </p>
+            <div class="controls">
+                <button class="btn-success" style="grid-column: 1; padding: 1rem;" onclick="runFullSuite()">
+                    ▶ Ejecutar Suite Completa
+                </button>
+                <button class="btn-secondary" onclick="clearAllResults()">Limpiar Resultados</button>
+            </div>
+            <div id="suite-status" class="status" style="display: none;"></div>
+            <div class="results" id="full-results"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './supabase.js';
+        import {
+            applyExpenseImpact,
+            revertExpenseImpact,
+            applyIncomeImpact,
+            revertIncomeImpact,
+            applyCreditPaymentImpact,
+            revertCreditPaymentImpact,
+            deleteMirrorExpensesByPaymentId
+        } from './balanceHandlers.js';
+
+        window.supabase = supabase;
+        window.balanceHandlers = {
+            applyExpenseImpact,
+            revertExpenseImpact,
+            applyIncomeImpact,
+            revertIncomeImpact,
+            applyCreditPaymentImpact,
+            revertCreditPaymentImpact,
+            deleteMirrorExpensesByPaymentId
+        };
+
+        // Global test state
+        window.testState = {
+            userId: null,
+            testCardId: null,
+            testCardDebit: null,
+            testCardCredit: null,
+            testExpenseId: null,
+            testIncomeId: null,
+            testPaymentId: null,
+            totalTests: 0,
+            passedTests: 0,
+            failedTests: 0
+        };
+
+        window.logResult = function(sectionId, message, isPass) {
+            const el = document.getElementById(sectionId);
+            if (el) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `result-item ${isPass ? 'result-pass' : isPass === null ? 'result-info' : 'result-fail'}`;
+                resultDiv.textContent = message;
+                el.appendChild(resultDiv);
+            }
+            if (isPass !== null) {
+                window.testState.totalTests++;
+                if (isPass) window.testState.passedTests++;
+                else window.testState.failedTests++;
+                updateStats();
+            }
+        };
+
+        window.updateStats = function() {
+            document.getElementById('total-tests').textContent = window.testState.totalTests;
+            document.getElementById('passed-tests').textContent = window.testState.passedTests;
+            document.getElementById('failed-tests').textContent = window.testState.failedTests;
+        };
+
+        window.clearAllResults = function() {
+            ['expense-results', 'income-results', 'payment-results', 'full-results'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '';
+            });
+            window.testState = {
+                userId: null,
+                testCardId: null,
+                testCardDebit: null,
+                testCardCredit: null,
+                testExpenseId: null,
+                testIncomeId: null,
+                testPaymentId: null,
+                totalTests: 0,
+                passedTests: 0,
+                failedTests: 0
+            };
+            updateStats();
+            document.getElementById('suite-status').style.display = 'none';
+        };
+
+        // Init: Get current user & test cards
+        (async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                logResult('expense-results', '❌ No estás autenticado. Ve a login.html', false);
+                return;
+            }
+            window.testState.userId = user.id;
+            logResult('expense-results', `✓ Usuario autenticado: ${user.id.slice(0, 8)}...`, null);
+
+            // Get or create test cards
+            const { data: cards } = await supabase
+                .from('cards')
+                .select('id_card, type_card')
+                .eq('id_user', user.id)
+                .eq('deleted_card', false)
+                .limit(3);
+
+            if (cards && cards.length > 0) {
+                window.testState.testCardId = cards[0].id_card;
+                const debit = cards.find(c => c.type_card === 'Debit');
+                const credit = cards.find(c => c.type_card === 'Credit');
+                window.testState.testCardDebit = debit?.id_card || cards[0].id_card;
+                window.testState.testCardCredit = credit?.id_card || cards[0].id_card;
+                logResult('expense-results', `✓ Tarjetas cargadas (${cards.length} encontradas)`, null);
+            } else {
+                logResult('expense-results', '❌ No hay tarjetas. Crea al menos una en el app.', false);
+            }
+        })();
+    </script>
+    <script src="test.js"></script>
+</body>
+</html>

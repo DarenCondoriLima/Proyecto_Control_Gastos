@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { applyExpenseImpact, applyCreditPaymentImpact } from './balanceHandlers.js';
 
 // ═══════════════════════════════════════════════════════════════
 // UTILIDADES
@@ -463,7 +464,7 @@ async function saveExpense(user) {
 
     setLoading('exp-submit-btn', true);
 
-    const { error } = await supabase.from('expenses').insert([{
+    const { data: insertedExpense, error } = await supabase.from('expenses').insert([{
         id_user:         user.id,
         amount_exp:      amount,
         date_exp:        document.getElementById('exp-date').value,
@@ -474,7 +475,7 @@ async function saveExpense(user) {
         id_card:         cardId,
         installments,
         installment_amt: installmentAmt
-    }]);
+    }]).select('*').single();
 
     setLoading('exp-submit-btn', false, 'Guardar Gasto');
 
@@ -482,6 +483,8 @@ async function saveExpense(user) {
         console.error('[expense]', error);
         showToast('Error: ' + error.message, 'error');
     } else {
+        // Aplicar impacto de gasto en DB (reemplaza el trigger)
+        await applyExpenseImpact(insertedExpense);
         // Actualizar saldo local para que validaciones siguientes sean correctas
         const card = allCards.find(c => c.id_card === cardId);
         if (card && method !== 'Credit') {
@@ -563,8 +566,8 @@ async function saveDebt(user) {
         return;
     }
 
-    // 5. Segundo Insert: Gasto (Activa el Trigger para restar del CURRENT_BALANCE)
-    const { error: expError } = await supabase.from('expenses').insert([{
+    // 5. Segundo Insert: Gasto
+    const { data: insertedDebtExpense, error: expError } = await supabase.from('expenses').insert([{
         id_user: user.id,
         amount_exp: amount,
         date_exp: dateDebt,
@@ -574,7 +577,7 @@ async function saveDebt(user) {
         payment_method: source.type_card, 
         id_card: sourceCardId,
         installments: 1
-    }]);
+    }]).select('*').single();
 
     setLoading('debt-submit-btn', false, 'Registrar Préstamo');
 
@@ -582,6 +585,8 @@ async function saveDebt(user) {
         console.error('[debt-expense-error]', expError);
         showToast('Préstamo registrado, pero el saldo no se actualizó.', 'error');
     } else {
+        // Aplicar impacto de gasto (reemplaza trigger)
+        await applyExpenseImpact(insertedDebtExpense);
         showToast('✓ Préstamo registrado y saldo actualizado');
         setTimeout(() => window.location.href = 'dashboard.html', 1200);
     }
@@ -756,8 +761,10 @@ async function savePayment(user) {
         return;
     }
 
-    // ── Registrar gasto en expenses para activar el trigger ──
-    // Esto descontará el saldo de la cuenta de origen via trigger
+    // ── Aplicar impacto de pago (reemplaza trigger)
+    await applyCreditPaymentImpact(payData);
+
+    // ── Registrar gasto en expenses para crear registro espejo (excluido del balance)
     const { error: expError } = await supabase.from('expenses').insert([{
         id_user:         user.id,
         amount_exp:      amount,
@@ -780,7 +787,7 @@ async function savePayment(user) {
         console.error('[payment-expense]', expError);
         showToast('Pago registrado, pero hubo un error al registrar el gasto.', 'error');
     } else {
-        // Actualizar saldo local
+        // Actualizar saldo local (ya aplicado por applyCreditPaymentImpact)
         if (source) source.current_balance = parseFloat(source.current_balance) - amount;
         showToast('✓ Pago registrado correctamente', 'success');
         setTimeout(() => window.location.href = 'gestionTarjetas.html', 1400);
